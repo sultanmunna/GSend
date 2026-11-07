@@ -66,12 +66,19 @@ Order matters: each milestone builds on the previous one.
 - [x] Optional Inno Setup script
 - [x] Measured: idle RAM, startup time
 
-**Acceptance:** The built app runs on a clean Windows machine without Python, signs in, notifies, and idles at <= 80 MB.
+Re-verified 2026-11-07 after the security pass (docs/SECURITY_REPORT.md, docs/BUILD.md):
+frozen `--self-check` all PASS; discovery document and client config verified in the
+bundle; `--self-check` CLI, `scripts/measure_idle.py`, `scripts/soak_monitor.py` and
+`scripts/package_release.ps1` (with the `-ScanBuild` rule for antivirus services) added;
+measured startup 0.8 s / idle RSS 72.8 MB / CPU 0.08% / dist 152.7 MB. Fixed during
+re-verification: `make_icons.py` silently failed in the clean build venv.
+
+**Acceptance:** The built app runs on a clean Windows machine without Python, signs in, notifies, and idles at <= 80 MB. *(Clean-machine run: needs human — T-24.)*
 
 ## M8 — Hardening and release
 - [x] Full review against `docs/SECURITY.md` checklist
 - [x] Log audit (no mail content), dependency audit (`pip-audit`), pinned versions
-- [ ] 24-hour soak test (memory stays flat)
+- [ ] 24-hour soak test (memory stays flat) — `scripts/soak_monitor.py` is ready for it
 - [x] README for end users, release checklist completed
 
 **Acceptance:** All items in the release checklist below are ticked.
