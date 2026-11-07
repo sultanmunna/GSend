@@ -27,3 +27,4 @@ logs/
 *.log
 CLAUDE.md
 .zcode/
+.github/
