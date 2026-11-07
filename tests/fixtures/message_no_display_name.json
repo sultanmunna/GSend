@@ -1,0 +1,19 @@
+{
+  "id": "msg-noname",
+  "threadId": "thread-noname",
+  "internalDate": "1730007200000",
+  "labelIds": ["INBOX", "UNREAD"],
+  "snippet": "plain ascii snippet",
+  "payload": {
+    "headers": [
+      {
+        "name": "From",
+        "value": "<noone@nowhere.org>"
+      },
+      {
+        "name": "Subject",
+        "value": "Weekly report"
+      }
+    ]
+  }
+}

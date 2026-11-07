@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Build output
+build/
+dist/
+GmailNotifier.spec
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# Editors (none committed)
+.vscode/
+.idea/
+
+# Secrets and local configuration (hard rule 5) — never commit
+client_config.json
+.env
+
+# Local logs and agent-local files (app logs live in %LOCALAPPDATA%)
+logs/
+*.log
+CLAUDE.md

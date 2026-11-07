@@ -1,0 +1,19 @@
+{
+  "id": "msg-bangla",
+  "threadId": "thread-bangla",
+  "internalDate": "1730000000000",
+  "labelIds": ["INBOX", "UNREAD", "CATEGORY_PERSONAL"],
+  "snippet": "&#39;Dinner&#39; at 8pm &amp; more   details\u200b inside",
+  "payload": {
+    "headers": [
+      {
+        "name": "From",
+        "value": "=?UTF-8?B?4Kaw4Kar4Ka/4KaVIOCmh+CmuOCmsuCmvuCmrg==?= <rafik@example.com>"
+      },
+      {
+        "name": "Subject",
+        "value": "=?UTF-8?B?4KaG4KacIOCmuOCmqOCnjeCmp+CnjeCmr+CmvuCmr+CmvCDgpq7gpr/gpp/gpr/gpoI=?="
+      }
+    ]
+  }
+}

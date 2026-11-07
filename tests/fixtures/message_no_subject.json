@@ -1,0 +1,15 @@
+{
+  "id": "msg-nosubject",
+  "threadId": "thread-nosubject",
+  "internalDate": "1730003600000",
+  "labelIds": ["INBOX", "CATEGORY_UPDATES"],
+  "snippet": "  body text with   irregular whitespace  ",
+  "payload": {
+    "headers": [
+      {
+        "name": "From",
+        "value": "\"Doe, Jane\" <jane@example.com>"
+      }
+    ]
+  }
+}

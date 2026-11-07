@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gmail-notifier"
+version = "0.1.0"
+description = "Gmail Tray Notifier: Android-style Gmail notifications for the Windows tray. 100% local."
+requires-python = ">=3.11"
+dependencies = [
+    "pystray>=0.19",
+    "Pillow>=10.0",
+    "google-api-python-client>=2.100",
+    "google-auth>=2.23",
+    "google-auth-oauthlib>=1.1",
+    "google-auth-httplib2>=0.1",
+    "keyring>=24.0",
+    "winotify>=1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "pyinstaller>=6.0",
+    "pip-audit>=2.7",
+]
+
+[project.scripts]
+gmail-notifier = "gmail_notifier.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gmail_notifier"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
