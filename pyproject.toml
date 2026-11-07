@@ -15,7 +15,10 @@ dependencies = [
     "google-auth-oauthlib>=1.1",
     "google-auth-httplib2>=0.1",
     "keyring>=24.0",
-    "winotify>=1.1",
+    # Pinned exactly: the toast boundary (text_utils.escape_winotify, D-18) is
+    # calibrated to this version's script TEMPLATE; tests/test_winotify_tripwire.py
+    # enforces the pin and explains the re-audit steps for a bump.
+    "winotify==1.1.0",
 ]
 
 [project.optional-dependencies]

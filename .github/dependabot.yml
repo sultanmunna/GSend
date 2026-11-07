@@ -1,4 +1,11 @@
 # Weekly dependency and action updates (docs/ROADMAP.md M8, SECURITY section 6).
+#
+# winotify is security-critical: it is pinned exactly (==) in pyproject.toml and
+# guarded by tests/test_winotify_tripwire.py because the toast escaping
+# (text_utils.escape_winotify, DECISIONS D-18) is calibrated to its script
+# TEMPLATE. If dependabot proposes a winotify bump, do NOT widen the pin to
+# merge it: re-audit the new template against the escaping, re-run
+# tests/test_toast_injection.py, then update the tripwire hash deliberately.
 version: 2
 updates:
   - package-ecosystem: pip
