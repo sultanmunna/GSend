@@ -2,8 +2,8 @@
 
 - Commit: `f6d2826` (QA session start)
 - App version: 0.1.0
-- Windows: build 10.0.22621 — **tester to confirm/correct** (expected Windows 11)
-- Date: 2026-11-07
+- Windows: Windows 11 22H2, build 10.0.22621, 1920x1080 (confirmed by tester)
+- Dates: session started 2026-11-07; Group 1 recorded 2026-11-08
 - Build: `dist\GmailNotifier` from `scripts/build_exe.ps1` (frozen `--self-check` all PASS)
 - Rules: no real mail content, addresses or tokens in this file — results are described
   in words and accounts are referred to as account#1, account#2.
@@ -12,18 +12,18 @@
 
 | ID | Scenario | Result | Notes |
 |---|---|---|---|
-| S-1 | Toast injection (hostile subject + hostile first body line) | pending | |
-| S-2 | Bangla subject, "&" display name, bidi control subject | pending | |
-| S-3 | "Show message preview" off | pending | |
-| T-01 | Sign in with a Google account | pending | |
-| T-02 | First-run automatic sign-in | pending | |
-| T-03 | New mail toast (subject + preview + account) | pending | |
-| T-04 | Tray menu shows the 3 latest mails | pending | |
-| T-05 | Tooltip shows the latest mail's sender and subject | pending | |
-| T-06 | Click a toast opens that mail | pending | |
-| T-07 | Click a menu item opens that mail | pending | |
-| T-08 | Read mail: icon back to idle, no re-toast | pending | |
-| T-09 | Old mail re-entering top 10 does not toast | pending | |
+| S-1 | Toast injection (hostile subject + hostile first body line) | **pass** | Whole hostile subject rendered as literal text in the toast (command substitution, quote-at, XML pseudo-tags, ampersand all visible; nothing bold, nothing swallowed, nothing executed). Persisted toast payload parses as well-formed XML with the full subject in one text node (exactly the sent length, all markers present). Tray menu row shows the same text up to the by-design `…` truncation; age and account column correct. Calculator never appeared (process-checked after every toast and every screenshot frame). Menu ampersand also verified in code (doubled for Win32). |
+| S-2 | Bangla subject, "&" display name, bidi control subject | **pass** | Sender display name with both ampersands visible in toast body and menu row. Bangla renders, word order intact; the embedded Latin word reads the backwards spelling — direction-control characters removed (payload text node exactly 2 chars shorter than the input; zero bidi control codepoints present) and the reordering failure signature (the forward spelling) is absent. No console flash at toast time. |
+| S-3 | "Show message preview" off | **pass** | Toast shows subject plus a single "sender · account" line; the preview sentence from the mail body is absent from banner and payload. Setting re-ticked afterwards and persisted (`show_preview: true`). |
+| T-01 | First run with no accounts | pending | |
+| T-02 | Sign in with an account already logged into Chrome | pending | |
+| T-03 | Add a second account | pending | |
+| T-04 | Send a mail to account 1 | pending | |
+| T-05 | Click the toast | pending | |
+| T-06 | Right-click the tray icon | pending | |
+| T-07 | Hover the tray icon | pending | |
+| T-08 | Left-click the tray icon | pending | |
+| T-09 | Non-ASCII sender/subject (Bangla, emoji) | pending | |
 | T-10 | Burst: 5 mails quickly | pending | |
 | T-12 | Offline 5 min, reconnect | pending | |
 | T-13 | Sleep and resume | pending | |
@@ -39,6 +39,19 @@
 | T-23 | Log review for a known subject/sender | pending | |
 | P-1 | Privacy test (TESTING.md §4): folder scan | pending | |
 | S-4 | Same account re-signed-in with different letter case | pending | |
+
+## Session notes
+
+- Group 1 sender mailbox: a third mailbox the tester controls (allowed by the
+  S-1 wording "any other mailbox you control"); its display name was changed
+  for S-2 and reverted on Gmail's settings page.
+- S-1/S-3 toasts fired via the 45 s auto-poll before "Check now" was clicked
+  (mail-to-toast latency ≈ one poll interval, no other delay); "Check now"
+  exercised successfully during S-2.
+- One S-3 tray-click attempt missed due to a tester-side UIA lookup flake
+  (clicked empty desktop; no app involvement).
+- Notification-center collapsed entry shows only the first toast line —
+  cosmetic, Windows-side rendering, not app behavior.
 
 ## Defects
 
