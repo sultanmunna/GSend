@@ -37,4 +37,4 @@ If the app's data handling ever changes, this policy will be updated and the "la
 
 ## Contact
 
-Questions or requests: **[YOUR-EMAIL]@gmail.com**
+Questions or requests: **munna.syc@gmail.com**
