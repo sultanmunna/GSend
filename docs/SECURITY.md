@@ -24,7 +24,7 @@ Privacy is the product's main promise: **your mail never leaves your PC except i
 
 ## 3. Network allowlist
 
-`accounts.google.com`, `oauth2.googleapis.com` (token and revoke), `gmail.googleapis.com`. Nothing else: no analytics, crash reporting, update checks, fonts or images. Gmail services are built with the **bundled** discovery document (`static_discovery=True`, D-19), so no discovery fetch contacts `www.googleapis.com`; `client_config.json` URIs are validated against these endpoints (D-18 of `auth.py` — see SECURITY_REPORT SEC-05) and the built credential is pinned to the Google token endpoint.
+`accounts.google.com`, `oauth2.googleapis.com` (token and revoke), `gmail.googleapis.com`. Nothing else: no analytics, crash reporting, update checks, fonts or images. Gmail services are built with the **bundled** discovery document (`static_discovery=True`, D-19), so no discovery fetch contacts `www.googleapis.com`; `client_config.json` URIs are validated against these endpoints and the built credential is pinned to the Google token endpoint (D-21, SECURITY_REPORT SEC-05).
 
 ## 4. OAuth specifics
 

@@ -101,3 +101,8 @@ Architecture decision log. Add a new entry (next number) for any change to a dec
 - **Decision:** `text_utils` removes the directional formatting characters (bidi overrides U+202A-U+202E, isolates U+2066-U+2069, LRM/RLM U+200E/U+200F) in `decode_header_value` and `clean_snippet`, next to the existing invisible-padding cleanup.
 - **Why:** Senders, subjects and snippets are attacker-controlled; a directional override can visually reorder tray menu, tooltip and toast text so a spoofed name reads differently from its bytes (classic price/name-swap trick, "PayPa\u202el Support"). Rendering safely matters more than fidelity for invisible, semantics-only characters.
 - **Consequences:** A mail whose sender genuinely uses an RTL override renders without direction control (the RTL glyphs themselves still display). Existing truncation limits are unchanged.
+
+## D-21 OAuth client-config URIs are validated; the credential is pinned to Google's token endpoint
+- **Decision:** `auth._validate_installed_config` accepts `client_config.json` only when `auth_uri` is under `https://accounts.google.com/` and `token_uri` is exactly `https://oauth2.googleapis.com/token`; `credentials_for` builds the credential with `config.GOOGLE_TOKEN_URL` regardless of the file's `token_uri` (SECURITY_REPORT SEC-05).
+- **Why:** `client_config.json` is a local, user-editable file that used to be trusted blindly: a swapped config could route the consent page or the token exchange (and with it the refresh token) to a non-Google host. Failing loudly (`ConfigError`) beats silently trusting the file.
+- **Consequences:** A config with a non-canonical but Google-owned token URI (none are known) would be refused; the browser flow still uses the file's `auth_uri` after the prefix check.
