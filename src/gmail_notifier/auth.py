@@ -293,7 +293,12 @@ def _run_local_sign_in(flow: InstalledAppFlow, timeout_seconds: int) -> Credenti
             server.handle_request()
         # oauthlib insists on https in the authorization response; the redirect was http.
         authorization_response = app.last_request_uri.replace("http", "https", 1)
-        flow.fetch_token(authorization_response=authorization_response)
+        # The exchange is a blocking HTTPS POST; without a timeout a hung
+        # connection would keep the auth worker busy forever (D-14 flow).
+        flow.fetch_token(
+            authorization_response=authorization_response,
+            timeout=config.HTTP_TIMEOUT_SECONDS,
+        )
         return flow.credentials
     finally:
         server.server_close()

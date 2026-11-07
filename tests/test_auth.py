@@ -13,11 +13,12 @@ import socket
 import struct
 import threading
 import time
+from types import SimpleNamespace
 from urllib.parse import urlparse
 
 import pytest
 
-from gmail_notifier import auth, security_logging
+from gmail_notifier import auth, config, security_logging
 from gmail_notifier.errors import (
     AuthCancelled,
     ConfigError,
@@ -425,3 +426,39 @@ def test_add_account_accepts_v2_auth_uri_variant(fake_flow, fake_keyring, monkey
     }
     email = auth.add_account_interactive(client_config=cfg)
     assert email == "user@example.com"
+
+
+# --- Token exchange timeout (SECURITY section 4): no unbounded waits ----------
+
+
+class _FakeServer:
+    """Stand-in for the loopback WSGI server: answers on the first request."""
+
+    def __init__(self, app):
+        self.app = app
+        self.server_port = 57571
+        self.timeout = None
+
+    def handle_request(self):
+        self.app.last_request_uri = (
+            "http://localhost:57571/?code=fake-code&state=fake-state"
+        )
+
+    def server_close(self):
+        pass
+
+
+def test_fetch_token_passes_a_timeout(fake_flow, monkeypatch):
+    """The token exchange is a blocking POST: it must carry a socket timeout."""
+    monkeypatch.setattr(
+        "wsgiref.simple_server.make_server", lambda _h, _p, app, **_kw: _FakeServer(app)
+    )
+    fake_browser = SimpleNamespace(open=lambda *_a, **_k: False)
+    monkeypatch.setattr("gmail_notifier.auth.webbrowser", fake_browser)
+    credentials = auth._run_local_sign_in(fake_flow(), timeout_seconds=5)
+    assert credentials.refresh_token == "refresh-token-abc"
+    kwargs = fake_flow.last_fetch_kwargs
+    assert kwargs["timeout"] == config.HTTP_TIMEOUT_SECONDS
+    # oauthlib requires the https form of the redirect for parsing:
+    assert kwargs["authorization_response"].startswith("https://localhost:57571/")
+    assert "code=fake-code" in kwargs["authorization_response"]
