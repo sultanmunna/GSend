@@ -8,7 +8,7 @@ __pycache__/
 # Build output
 build/
 dist/
-GmailNotifier.spec
+GSend.spec
 
 # Tooling caches
 .pytest_cache/

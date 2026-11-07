@@ -1,4 +1,4 @@
-"""Rotating file logging under %LOCALAPPDATA%\\GmailNotifier\\logs; console only in dev.
+"""Rotating file logging under %LOCALAPPDATA%\\GSend\\logs; console only in dev.
 
 Logging rules (docs/SECURITY.md section 5): events, counts, durations and error
 classes only — never mail content, tokens or client secrets. This module only
@@ -12,7 +12,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from gmail_notifier import config, security_logging
+from gsend import config, security_logging
 
 _LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 _LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"

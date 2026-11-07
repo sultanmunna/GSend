@@ -1,6 +1,6 @@
 # PRODUCT.md
 
-Working name: **Gmail Tray Notifier**. Platform: **Windows 10 (1809+) and Windows 11**.
+Working name: **GSend**. Platform: **Windows 10 (1809+) and Windows 11**.
 
 ## 1. Problem
 
@@ -92,9 +92,9 @@ Line 2: {subject}
 
 If too long, truncate the subject first, then the sender. Priority of what to show: no account > account needs sign-in > latest mail.
 
-- No account: `Gmail Notifier: no account. Right-click to add one.`
-- Needs sign-in: `Gmail Notifier: sign-in needed. Right-click to fix.`
-- No mail: `Gmail Notifier: no recent mail`
+- No account: `GSend: no account. Right-click to add one.`
+- Needs sign-in: `GSend: sign-in needed. Right-click to fix.`
+- No mail: `GSend: no recent mail`
 
 ### 6.4 Toast (new mail)
 
@@ -118,7 +118,7 @@ Line 2+: {preview}                   (<= 180 chars; omitted if show_preview is o
 
 ## 7. Settings
 
-Stored in `%APPDATA%\GmailNotifier\settings.json`. Invalid values are clamped or reset to defaults; a corrupt file never crashes the app.
+Stored in `%APPDATA%\GSend\settings.json`. Invalid values are clamped or reset to defaults; a corrupt file never crashes the app.
 
 | Key | Default | Notes |
 |---|---|---|

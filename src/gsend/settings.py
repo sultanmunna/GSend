@@ -16,7 +16,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from gmail_notifier import config
+from gsend import config
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ DEFAULTS = Settings()
 
 
 def load(path: Path | None = None) -> Settings:
-    """Load settings from `path` (default: %APPDATA%/GmailNotifier/settings.json)."""
+    """Load settings from `path` (default: %APPDATA%/GSend/settings.json)."""
     path = path if path is not None else config.settings_path()
     try:
         if path.stat().st_size > _MAX_JSON_BYTES:

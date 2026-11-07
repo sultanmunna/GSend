@@ -20,14 +20,14 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from gmail_notifier import errors
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.models import Account, AccountStatus, Mail
-from gmail_notifier.state import AppState
+from gsend import errors
+from gsend.accounts import AccountStore
+from gsend.models import Account, AccountStatus, Mail
+from gsend.state import AppState
 
 if TYPE_CHECKING:
-    from gmail_notifier.gmail_client import MailSource
-    from gmail_notifier.settings import Settings
+    from gsend.gmail_client import MailSource
+    from gsend.settings import Settings
 
 logger = logging.getLogger(__name__)
 

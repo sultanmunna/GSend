@@ -12,10 +12,10 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 
-from gmail_notifier import config, formatting, links, text_utils
-from gmail_notifier.models import Mail
-from gmail_notifier.settings import Settings
-from gmail_notifier.state import AppState
+from gsend import config, formatting, links, text_utils
+from gsend.models import Mail
+from gsend.settings import Settings
+from gsend.state import AppState
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class Notifier:
         """First-sign-in confirmation (docs/PRODUCT.md section 5)."""
         self._safe(
             lambda: self._backend.show(
-                "Gmail Notifier",
+                "GSend",
                 f"Signed in as {account_email}. You'll get notifications for new mail.",
                 None,
                 self._settings.notification_sound,
@@ -134,7 +134,7 @@ class Notifier:
         message = (
             f"Sign-in needed for {display}. Right-click the tray icon and choose Sign in again."
         )
-        self._backend.show("Gmail Notifier: sign-in needed", message, None, False)
+        self._backend.show("GSend: sign-in needed", message, None, False)
 
     def _display_for(self, account_email: str) -> str | None:
         accounts = self._state.accounts()

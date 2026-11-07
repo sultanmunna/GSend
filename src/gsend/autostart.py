@@ -1,7 +1,7 @@
 """Start-with-Windows via the HKCU Run key (docs/PRODUCT.md section 7).
 
 Registered command: the frozen exe when packaged (PyInstaller), otherwise
-pythonw.exe -m gmail_notifier. The three `_registry_*` wrappers are thin winreg
+pythonw.exe -m gsend. The three `_registry_*` wrappers are thin winreg
 calls and the test seam; the public functions own the error policy — failures
 are logged by type only and never raise (Windows-only module, per AGENTS.md).
 """
@@ -12,10 +12,30 @@ import logging
 import sys
 from pathlib import Path
 
+from gsend import config
+
 logger = logging.getLogger(__name__)
 
 _RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-_VALUE_NAME = "GmailNotifier"
+_VALUE_NAME = config.APP_NAME
+_LEGACY_VALUE_NAME = config.LEGACY_APP_NAME
+
+
+def migrate_legacy_value() -> None:
+    """Move a pre-rename autostart entry to the current value name (D-23).
+
+    A leftover "GmailNotifier" Run value would try to start the old module
+    name and silently fail. If it exists, drop it and register the current
+    command; if not, do nothing. Never raises.
+    """
+    try:
+        if _registry_read(_LEGACY_VALUE_NAME) is None:
+            return
+        _registry_delete(_LEGACY_VALUE_NAME)
+        _registry_write(_VALUE_NAME, command())
+        logger.info("autostart entry migrated to the current value name")
+    except OSError as exc:
+        logger.warning("autostart migration failed (%s)", type(exc).__name__)
 
 
 def command() -> str:
@@ -23,7 +43,7 @@ def command() -> str:
     if getattr(sys, "frozen", False):
         return f'"{sys.executable}"'
     pythonw = Path(sys.executable).with_name("pythonw.exe")
-    return f'"{pythonw}" -m gmail_notifier'
+    return f'"{pythonw}" -m gsend'
 
 
 def enable() -> None:

@@ -6,14 +6,14 @@ import threading
 import time
 from datetime import UTC, datetime
 
-from gmail_notifier import app as app_module
-from gmail_notifier import autostart
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.app import _App, _SingleFlightWorker
-from gmail_notifier.models import Account, AccountStatus, Mail
-from gmail_notifier.settings import Settings
-from gmail_notifier.state import AppState
-from gmail_notifier.tray import IconState, Tray, TrayCallbacks, draw_icon
+from gsend import app as app_module
+from gsend import autostart
+from gsend.accounts import AccountStore
+from gsend.app import _App, _SingleFlightWorker
+from gsend.models import Account, AccountStatus, Mail
+from gsend.settings import Settings
+from gsend.state import AppState
+from gsend.tray import IconState, Tray, TrayCallbacks, draw_icon
 
 
 class FakeRegistry:
@@ -154,9 +154,9 @@ def test_tray_refresh_replaces_starting_tooltip():
     # real no-account text.
     state = AppState()
     tray = Tray(state, Settings(), _callbacks())
-    assert tray._icon.title == "Gmail Notifier: starting…"
+    assert tray._icon.title == "GSend: starting…"
     tray.refresh()
-    assert tray._icon.title == "Gmail Notifier: no account. Right-click to add one."
+    assert tray._icon.title == "GSend: no account. Right-click to add one."
 
 
 def test_tray_menu_with_mail_and_accounts():
@@ -320,7 +320,7 @@ def test_welcome_toast_and_autostart_default_on_first_account(tmp_path, monkeypa
     assert wait_for_worker(app)
     assert fake.welcomes == ["first@x.com"]
     assert store.has("first@x.com")
-    assert "GmailNotifier" in fake_registry.values  # default applied once
+    assert "GSend" in fake_registry.values  # default applied once
 
 
 def test_different_account_on_re_sign_in_becomes_new_account(tmp_path, monkeypatch):
@@ -382,21 +382,69 @@ def test_startup_migration_renames_account_row_and_keyring(tmp_path, fake_keyrin
     """Mixed-case legacy rows end up lower-cased in accounts.json and keyring."""
     store = AccountStore(tmp_path / "accounts.json")
     store.add("MixedCase@Gmail.COM", label="Work")
-    fake_keyring.set_password("GmailNotifier", "MixedCase@Gmail.COM", "stored-token")
+    fake_keyring.set_password("GSend", "MixedCase@Gmail.COM", "stored-token")
     app_module._migrate_account_keys(store)
     accounts = store.list()
     assert len(accounts) == 1
     assert accounts[0].email == "mixedcase@gmail.com"
     assert accounts[0].label == "Work"
-    assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") == "stored-token"
-    assert fake_keyring.get_password("GmailNotifier", "MixedCase@Gmail.COM") is None
+    assert fake_keyring.get_password("GSend", "mixedcase@gmail.com") == "stored-token"
+    assert fake_keyring.get_password("GSend", "MixedCase@Gmail.COM") is None
 
 
 def test_startup_migration_leaves_normalized_accounts_alone(tmp_path, fake_keyring):
     store = AccountStore(tmp_path / "accounts.json")
     store.add("user@example.com")
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    fake_keyring.set_password("GSend", "user@example.com", "stored-token")
     before = dict(fake_keyring.entries)
     app_module._migrate_account_keys(store)
     assert [a.email for a in store.list()] == ["user@example.com"]
     assert fake_keyring.entries == before
+
+
+# --- one-time legacy-state migration (D-23 rename) -------------------------------
+
+
+def test_legacy_state_migration_copies_settings_and_accounts(tmp_path, monkeypatch):
+    new_dir = tmp_path / "GSend"
+    old_dir = tmp_path / "GmailNotifier"
+    old_dir.mkdir()
+    (old_dir / "settings.json").write_text('{"poll_interval_seconds": 999}', encoding="utf-8")
+    (old_dir / "accounts.json").write_text(
+        '[{"email": "user@example.com", "label": null}]', encoding="utf-8"
+    )
+    monkeypatch.setattr(app_module.config, "appdata_dir", lambda: new_dir)
+    monkeypatch.setattr(app_module.autostart, "migrate_legacy_value", lambda: None)
+    app_module._migrate_legacy_state()
+    assert (new_dir / "settings.json").read_text(
+        encoding="utf-8"
+    ) == '{"poll_interval_seconds": 999}'
+    assert "user@example.com" in (new_dir / "accounts.json").read_text(encoding="utf-8")
+    # the old folder is kept, never deleted (old logs stay there)
+    assert (old_dir / "settings.json").exists()
+
+
+def test_legacy_state_migration_never_overwrites_new_files(tmp_path, monkeypatch):
+    new_dir = tmp_path / "GSend"
+    old_dir = tmp_path / "GmailNotifier"
+    old_dir.mkdir()
+    (old_dir / "accounts.json").write_text(
+        '[{"email": "old@x.com", "label": null}]', encoding="utf-8"
+    )
+    new_dir.mkdir()
+    (new_dir / "accounts.json").write_text(
+        '[{"email": "new@x.com", "label": null}]', encoding="utf-8"
+    )
+    monkeypatch.setattr(app_module.config, "appdata_dir", lambda: new_dir)
+    monkeypatch.setattr(app_module.autostart, "migrate_legacy_value", lambda: None)
+    app_module._migrate_legacy_state()
+    assert "new@x.com" in (new_dir / "accounts.json").read_text(encoding="utf-8")
+    assert "old@x.com" not in (new_dir / "accounts.json").read_text(encoding="utf-8")
+
+
+def test_legacy_state_migration_without_legacy_folder_is_noop(tmp_path, monkeypatch):
+    new_dir = tmp_path / "GSend"
+    monkeypatch.setattr(app_module.config, "appdata_dir", lambda: new_dir)
+    monkeypatch.setattr(app_module.autostart, "migrate_legacy_value", lambda: None)
+    app_module._migrate_legacy_state()  # must not raise or create anything
+    assert not new_dir.exists()

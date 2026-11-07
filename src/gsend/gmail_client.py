@@ -20,8 +20,8 @@ from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-from gmail_notifier import config, errors, text_utils
-from gmail_notifier.models import Mail
+from gsend import config, errors, text_utils
+from gsend.models import Mail
 
 logger = logging.getLogger(__name__)
 

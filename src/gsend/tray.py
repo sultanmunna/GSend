@@ -21,10 +21,10 @@ from pathlib import Path
 import pystray
 from PIL import Image, ImageDraw
 
-from gmail_notifier import formatting
-from gmail_notifier.models import Account, AccountStatus, Mail
-from gmail_notifier.settings import Settings
-from gmail_notifier.state import AppState
+from gsend import config, formatting
+from gsend.models import Account, AccountStatus, Mail
+from gsend.settings import Settings
+from gsend.state import AppState
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +126,9 @@ class Tray:
         self._callbacks = callbacks
         self._data_folder = data_folder
         self._icon = pystray.Icon(
-            "GmailNotifier",
+            config.APP_NAME,
             icon=draw_icon(IconState.IDLE),
-            title="Gmail Notifier: starting…",
+            title="GSend: starting…",
             menu=pystray.Menu(self._menu_items),
         )
 

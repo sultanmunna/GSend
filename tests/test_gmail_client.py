@@ -15,10 +15,10 @@ from google.auth.exceptions import RefreshError
 from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.errors import HttpError
 
-from gmail_notifier import config, gmail_client
-from gmail_notifier.errors import GmailError, ReauthRequired, TransientError
-from gmail_notifier.gmail_client import GmailClient, parse_message
-from gmail_notifier.models import Mail
+from gsend import config, gmail_client
+from gsend.errors import GmailError, ReauthRequired, TransientError
+from gsend.gmail_client import GmailClient, parse_message
+from gsend.models import Mail
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -277,7 +277,7 @@ def test_service_build_uses_bundled_discovery(monkeypatch):
         captured.update(kwargs)
         return object()
 
-    monkeypatch.setattr("gmail_notifier.gmail_client.build", fake_build)
+    monkeypatch.setattr("gsend.gmail_client.build", fake_build)
     gmail_client._build_service(credentials=None)
     assert captured.get("static_discovery") is True
     assert captured.get("cache_discovery") is False
@@ -306,7 +306,7 @@ def test_profile_service_build_uses_bundled_discovery(monkeypatch):
         return FakeService()
 
     monkeypatch.setattr("googleapiclient.discovery.build", fake_build)
-    from gmail_notifier import auth
+    from gsend import auth
 
     email = auth._profile_email(credentials=None)
     assert email == "user@example.com"

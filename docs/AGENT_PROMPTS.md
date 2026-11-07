@@ -18,7 +18,7 @@ Tip: if an agent drifts from the rules, point it back to "Hard rules" in `AGENTS
 ## Kickoff (no code)
 
 ```
-You are joining a new project: Gmail Tray Notifier (Windows tray app, Python, 100% local, no server).
+You are joining a new project: GSend (Windows tray app, Python, 100% local, no server).
 Read in this order: AGENTS.md, docs/PRODUCT.md, docs/ARCHITECTURE.md, docs/SECURITY.md,
 docs/DECISIONS.md, docs/ROADMAP.md, docs/TESTING.md.
 Do NOT write code or create files yet.
@@ -38,14 +38,14 @@ Task: Milestone M0 (project scaffold). Follow AGENTS.md: hard rules, conventions
 Read: AGENTS.md, docs/ARCHITECTURE.md (sections 2 to 5), docs/PRODUCT.md (sections 6.5 and 7), docs/ROADMAP.md (M0).
 
 Build:
-1. pyproject.toml: name gmail-notifier, Python >=3.11, src layout, dependencies (pystray, Pillow,
+1. pyproject.toml: name gsend, Python >=3.11, src layout, dependencies (pystray, Pillow,
    google-api-python-client, google-auth, google-auth-oauthlib, keyring, winotify), optional dev
-   dependencies (pytest, ruff, pyinstaller, pip-audit), ruff and pytest config, script entry "gmail-notifier".
+   dependencies (pytest, ruff, pyinstaller, pip-audit), ruff and pytest config, script entry "gsend".
 2. .gitignore (.venv, build, dist, __pycache__, logs, client_config.json, .env) and
    client_config.example.json with placeholder values in the "installed" format.
-3. Package src/gmail_notifier/ with EVERY module from the layout in AGENTS.md as a stub that has a
+3. Package src/gsend/ with EVERY module from the layout in AGENTS.md as a stub that has a
    docstring stating its responsibility. Fully implement only:
-   - config.py: APP_NAME, KEYRING_SERVICE="GmailNotifier", SCOPES (gmail.readonly only), URL constants,
+   - config.py: APP_NAME, KEYRING_SERVICE="GSend", SCOPES (gmail.readonly only), URL constants,
      paths under %APPDATA% and %LOCALAPPDATA% (create folders lazily).
    - errors.py: AuthCancelled, ReauthRequired, TransientError, GmailError, ConfigError.
    - models.py: Mail, Account, AccountStatus as frozen dataclasses (fields exactly as in ARCHITECTURE section 4).
@@ -58,7 +58,7 @@ Build:
    HTML entities, truncation at word boundary), settings (defaults, clamping, corrupt file, atomic write), models.
 
 Do not implement auth, Gmail access, tray or toasts yet.
-Acceptance: pip install -e ".[dev]" works; pytest and ruff check . pass; "python -m gmail_notifier" logs a
+Acceptance: pip install -e ".[dev]" works; pytest and ruff check . pass; "python -m gsend" logs a
 startup line and exits cleanly.
 ```
 
@@ -75,7 +75,7 @@ Build:
    - load_client_config() with the load order from ARCHITECTURE section 5 (env path, bundled resource, ./client_config.json).
    - add_account_interactive(timeout_seconds=180) -> str: the flow in ARCHITECTURE section 6
      (prompt="select_account consent", PKCE, localhost listener, success message). It fetches the email via
-     users().getProfile, stores ONLY the refresh token with keyring (service "GmailNotifier", username = email),
+     users().getProfile, stores ONLY the refresh token with keyring (service "GSend", username = email),
      and returns the email. Raise AuthCancelled on cancel/timeout and a clear error if no refresh token returned.
    - credentials_for(email) -> google.oauth2.credentials.Credentials built from the stored refresh token and
      client config. Raise ReauthRequired if there is no token.
@@ -220,10 +220,10 @@ Read: AGENTS.md, docs/PRODUCT.md (sections 5, 6.2, 7), docs/ROADMAP.md (M6), doc
 
 Build:
 1. Settings submenu in tray.py: checkable items for show_preview, only_primary, start_with_windows; "Open data folder"
-   (opens %APPDATA%\GmailNotifier in Explorer); "Check now" (poller.wake()). Changes are saved atomically and take effect
+   (opens %APPDATA%\GSend in Explorer); "Check now" (poller.wake()). Changes are saved atomically and take effect
    immediately (poller reloads settings; only_primary change triggers a re-baseline for that account's cache without toasts).
 2. autostart.py: enable/disable/is_enabled via HKCU\Software\Microsoft\Windows\CurrentVersion\Run. When frozen, point to the
-   exe; when running from source, use pythonw -m gmail_notifier. Apply the default (enabled) after the first account is
+   exe; when running from source, use pythonw -m gsend. Apply the default (enabled) after the first account is
    added, once.
 3. Re-sign-in UX: account in NEEDS_REAUTH shows a warning item in Accounts; clicking runs the sign-in flow again and
    verifies the same email came back (if a different account was chosen, treat it as a new account and tell the user via
@@ -249,9 +249,9 @@ Build:
 1. scripts/make_icons.py: generate assets/app.ico (multiple sizes) with Pillow, matching the tray icon style.
 2. scripts/build_exe.ps1: create a clean venv, install pinned dependencies, run PyInstaller with --onedir --windowed,
    the icon, --add-data client_config.json;. (fail with a clear message if the file is missing), hidden imports for the
-   keyring Windows backend and pystray win32 backend, and Windows version info. Output to dist/GmailNotifier/.
+   keyring Windows backend and pystray win32 backend, and Windows version info. Output to dist/GSend/.
 3. Make sure the frozen app finds client_config.json via sys._MEIPASS and that autostart points to the frozen exe.
-4. Optional: installer/GmailNotifier.iss for Inno Setup (per-user install, no admin needed, optional start with Windows).
+4. Optional: installer/GSend.iss for Inno Setup (per-user install, no admin needed, optional start with Windows).
 5. A short docs/BUILD.md with the exact steps and the checks below.
 
 Measure and report: idle RAM after 10 minutes (Task Manager, Details), startup time to tray icon, folder size.

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from gmail_notifier.models import Account, AccountStatus, Mail
-from gmail_notifier.state import _MAX_OPENED, AppState
+from gsend.models import Account, AccountStatus, Mail
+from gsend.state import _MAX_OPENED, AppState
 
 
 def make_mail(mid: str, *, received: datetime, unread: bool = True, account: str = "a@x.com"):

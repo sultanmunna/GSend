@@ -21,12 +21,12 @@ drawing, and runs PyInstaller (`--onedir --windowed`, hidden imports for the
 keyring/pystray Windows backends, version resource). Output:
 
 ```
-dist\GmailNotifier\GmailNotifier.exe
+dist\GSend\GSend.exe
 ```
 
-Verified contents of `dist\GmailNotifier\` (M7 re-verification, 2026-11-07):
+Verified contents of `dist\GSend\` (M7 re-verification, 2026-11-07):
 
-- `GmailNotifier.exe` — PE32+, **subsystem 2 (WINDOWS_GUI)**, so no console
+- `GSend.exe` — PE32+, **subsystem 2 (WINDOWS_GUI)**, so no console
   window; icon and version resource embedded from `assets\`.
 - `_internal\client_config.json` — the real OAuth client, bundled at build time.
 - `_internal\googleapiclient\discovery_cache\documents\gmail.v1.json` — the
@@ -41,7 +41,7 @@ the tripwire's re-audit message before accepting a bump.
 ## Self-check
 
 ```powershell
-.\dist\GmailNotifier\GmailNotifier.exe --self-check
+.\dist\GSend\GSend.exe --self-check
 ```
 
 Runs offline checks only (no network, sign-in, tray or mutex) and prints one
@@ -54,15 +54,15 @@ generate.
 
 The windowed exe has no console, so the self-check attaches to the parent
 terminal (or allocates one) and also records the same lines (names only, no
-values) to `%LOCALAPPDATA%\GmailNotifier\logs\self_check.log`. **The scan
+values) to `%LOCALAPPDATA%\GSend\logs\self_check.log`. **The scan
 build (below) intentionally FAILs the "client config valid" line** — its fake
 client is unusable by design.
 
 ## Release packaging
 
 ```powershell
-.\scripts\package_release.ps1             # real build -> dist\GmailNotifier-<version>.zip + SHA256SUMS.txt
-.\scripts\package_release.ps1 -ScanBuild  # scan build  -> dist\GmailNotifier-<version>-scan.zip + SHA256SUMS-scan.txt
+.\scripts\package_release.ps1             # real build -> dist\GSend-<version>.zip + SHA256SUMS.txt
+.\scripts\package_release.ps1 -ScanBuild  # scan build  -> dist\GSend-<version>-scan.zip + SHA256SUMS-scan.txt
 ```
 
 ## Antivirus scanning: scan build ONLY
@@ -92,36 +92,36 @@ real account, poll interval 45 s:
 | Startup (to the "starting" log line) | 0.8 s | < 3 s |
 | Idle RSS after 10 minutes | 72.8 MB (flat from ~1 min: 63 → 72.6 → 72.8 MB) | <= 80 MB |
 | Idle CPU (average over 10 min) | 0.08% (~0% between polls) | ~0% |
-| `dist\GmailNotifier` folder size | 152.7 MB | informational |
+| `dist\GSend` folder size | 152.7 MB | informational |
 
 Re-measure on every release. The 24-hour soak (T-22) uses
 `scripts/soak_monitor.py`: start the exe, run
 `python scripts/soak_monitor.py --pid <pid>`; it appends one CSV line per
 minute (timestamp, pid, RSS MB, CPU %, threads, handles — numbers only) to
-`%LOCALAPPDATA%\GmailNotifier\logs\soak_metrics.csv`.
+`%LOCALAPPDATA%\GSend\logs\soak_metrics.csv`.
 
 ## Optional installer
 
 ```powershell
-iscc installer\GmailNotifier.iss
+iscc installer\GSend.iss
 ```
 
-Produces `dist\installer\GmailNotifierSetup.exe` — a per-user install (no
-admin rights) into `%LOCALAPPDATA%\Programs\GmailNotifier`.
+Produces `dist\installer\GSendSetup.exe` — a per-user install (no
+admin rights) into `%LOCALAPPDATA%\Programs\GSend`.
 
 ## Checks before release
 
 | Check | How | Target |
 |---|---|---|
 | `--self-check` | run the exe with the flag (above) | all PASS, exit 0 |
-| Runs without Python | copy `dist\GmailNotifier\` to a clean Windows 10/11 machine, start the exe | sign-in + toast work |
+| Runs without Python | copy `dist\GSend\` to a clean Windows 10/11 machine, start the exe | sign-in + toast work |
 | Startup | `scripts/measure_idle.py` (to "starting" log line), then confirm the tray icon is visible | < 3 s |
-| Idle RAM / CPU | `scripts/measure_idle.py --exe dist\GmailNotifier\GmailNotifier.exe --minutes 10` | <= 80 MB, ~0% |
+| Idle RAM / CPU | `scripts/measure_idle.py --exe dist\GSend\GSend.exe --minutes 10` | <= 80 MB, ~0% |
 | 24-hour soak | `scripts/soak_monitor.py` against the running exe | RSS flat over 24 h |
-| Folder size | `measure_idle.py --dist dist\GmailNotifier` | informational |
+| Folder size | `measure_idle.py --dist dist\GSend` | informational |
 | Single instance | start the exe twice | second exits silently |
 | Antivirus | upload the **scan build zip only** (see above) | no flags (unsigned: SmartScreen warning is expected) |
-| Logs | `%LOCALAPPDATA%\GmailNotifier\logs\app.log` contains no mail content | privacy test in docs/TESTING.md §4 |
+| Logs | `%LOCALAPPDATA%\GSend\logs\app.log` contains no mail content | privacy test in docs/TESTING.md §4 |
 
 Verification run 2026-11-07 (dev machine): frozen `--self-check` all PASS
 (recorded in `self_check.log`); 60-second live run — process alive, no console

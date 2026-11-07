@@ -1,10 +1,10 @@
 """Generate branding logos for the Google Auth Platform "Branding" page.
 
 Run from the repo root:  python scripts/make_logo.py
-Writes assets/logo/gmail_notifier_logo_512.png (white card) and
-assets/logo/gmail_notifier_logo_512_transparent.png. Both are square, well
+Writes assets/logo/gsend_logo_512.png (white card) and
+assets/logo/gsend_logo_512_transparent.png. Both are square, well
 above Google's 120x120 minimum. Same palette and envelope geometry as the
-runtime tray icon (gmail_notifier.tray), drawn supersampled for smooth edges.
+runtime tray icon (gsend.tray), drawn supersampled for smooth edges.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / "assets" / "logo"
 LOGO_SIZE = 512
 SS = 4  # supersampling factor: draw at 2048, downscale with Lanczos
 
-# Same palette as gmail_notifier.tray (kept local so tray keeps its private names).
+# Same palette as gsend.tray (kept local so tray keeps its private names).
 ENVELOPE_FILL = (66, 133, 244, 255)  # Google blue
 ENVELOPE_LINE = (43, 93, 173, 255)  # darker blue
 UNREAD_DOT = (234, 67, 53, 255)  # Google red
@@ -73,8 +73,8 @@ def draw_logo(background: str) -> Image.Image:
 def main() -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     outputs = {
-        "gmail_notifier_logo_512.png": "card",
-        "gmail_notifier_logo_512_transparent.png": "transparent",
+        "gsend_logo_512.png": "card",
+        "gsend_logo_512_transparent.png": "transparent",
     }
     for name, background in outputs.items():
         path = OUTPUT_DIR / name

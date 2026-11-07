@@ -1,8 +1,8 @@
-# Privacy Policy — Gmail Tray Notifier
+# Privacy Policy — GSend
 
 Last updated: November 7, 2026
 
-Gmail Tray Notifier ("the app") is a free Windows tray application that shows desktop notifications for new Gmail messages. It is developed and maintained by Sultan Mahmud Munna. This policy describes what the app accesses, what it stores, and what it never does — in short: **everything stays on your PC.**
+GSend ("the app") is a free Windows tray application that shows desktop notifications for new Gmail messages. It is developed and maintained by Sultan Mahmud Munna. This policy describes what the app accesses, what it stores, and what it never does — in short: **everything stays on your PC.**
 
 ## What the app accesses
 
@@ -11,7 +11,7 @@ With your Google permission, the app reads basic metadata of your recent inbox m
 ## What the app stores on your PC
 
 - A Google OAuth **refresh token**, stored only in **Windows Credential Manager** (encrypted by Windows).
-- App settings and your account email addresses and labels, stored in `%LOCALAPPDATA%\GmailNotifier` on your PC.
+- App settings and your account email addresses and labels, stored in `%LOCALAPPDATA%\GSend` on your PC.
 - A local log file containing technical events only — never mail content, subjects, senders or tokens.
 
 ## What the app never does
@@ -23,13 +23,13 @@ With your Google permission, the app reads basic metadata of your recent inbox m
 
 ## Data sharing and Google API disclosure
 
-The app communicates only with Google's OAuth and Gmail API endpoints (`accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`). Gmail Tray Notifier's use and transfer to any other app of information received from Google APIs will adhere to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
+The app communicates only with Google's OAuth and Gmail API endpoints (`accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`). GSend's use and transfer to any other app of information received from Google APIs will adhere to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
 
 ## Deleting your data
 
 - Choose **Remove** under the Accounts menu, or uninstall the app: the refresh token is deleted from Windows Credential Manager.
 - Revoke the app's access at any time at [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
-- The local data folder `%LOCALAPPDATA%\GmailNotifier` can be deleted to remove all remaining traces.
+- The local data folder `%LOCALAPPDATA%\GSend` can be deleted to remove all remaining traces.
 
 ## Changes
 

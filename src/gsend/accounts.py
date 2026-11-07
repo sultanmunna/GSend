@@ -14,7 +14,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from gmail_notifier import config
+from gsend import config
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-# Windows version resource for GmailNotifier.exe (consumed by PyInstaller
+# Windows version resource for GSend.exe (consumed by PyInstaller
 # --version-file). Keep ProductVersion in sync with pyproject.toml.
 # The VSVersionInfo names below are injected by PyInstaller when it parses
 # this file, so the linter cannot see them.
@@ -20,13 +20,13 @@ VSVersionInfo(
                 StringTable(
                     "040904B0",
                     [
-                        StringStruct("CompanyName", "Gmail Tray Notifier"),
-                        StringStruct("FileDescription", "Gmail Tray Notifier"),
+                        StringStruct("CompanyName", "GSend"),
+                        StringStruct("FileDescription", "GSend"),
                         StringStruct("FileVersion", "0.1.0"),
-                        StringStruct("InternalName", "GmailNotifier"),
+                        StringStruct("InternalName", "GSend"),
                         StringStruct("LegalCopyright", ""),
-                        StringStruct("OriginalFilename", "GmailNotifier.exe"),
-                        StringStruct("ProductName", "Gmail Tray Notifier"),
+                        StringStruct("OriginalFilename", "GSend.exe"),
+                        StringStruct("ProductName", "GSend"),
                         StringStruct("ProductVersion", "0.1.0"),
                     ],
                 )

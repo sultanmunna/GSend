@@ -14,9 +14,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from gmail_notifier import text_utils
-from gmail_notifier.models import Mail
-from gmail_notifier.settings import Settings
+from gsend import text_utils
+from gsend.models import Mail
+from gsend.settings import Settings
 
 MENU_LINE_LIMIT = 64  # 80 made the Win32 menu extremely wide (D-16)
 _AGE_COLUMN_LIMIT = 24  # cap for the right-aligned tab column
@@ -25,9 +25,9 @@ TOAST_TITLE_LIMIT = 70
 TOAST_PREVIEW_LIMIT = 180
 
 NO_SUBJECT = "(no subject)"
-_NO_ACCOUNT_TOOLTIP = "Gmail Notifier: no account. Right-click to add one."
-_SIGN_IN_TOOLTIP = "Gmail Notifier: sign-in needed. Right-click to fix."
-_NO_MAIL_TOOLTIP = "Gmail Notifier: no recent mail"
+_NO_ACCOUNT_TOOLTIP = "GSend: no account. Right-click to add one."
+_SIGN_IN_TOOLTIP = "GSend: sign-in needed. Right-click to fix."
+_NO_MAIL_TOOLTIP = "GSend: no recent mail"
 
 
 @dataclass(frozen=True)

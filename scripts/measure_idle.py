@@ -7,11 +7,11 @@ carries timestamps and numbers only — never log text, addresses, mail content
 or tokens.
 
 Usage:
-  python scripts/measure_idle.py --exe dist\\GmailNotifier\\GmailNotifier.exe --minutes 10
+  python scripts/measure_idle.py --exe dist\\GSend\\GSend.exe --minutes 10
   python scripts/measure_idle.py --pid 12345 --minutes 10
-  python scripts/measure_idle.py --dist dist\\GmailNotifier          (folder size only)
+  python scripts/measure_idle.py --dist dist\\GSend          (folder size only)
 
-Quit the running GmailNotifier instance first: a second launch would exit on
+Quit the running GSend instance first: a second launch would exit on
 the single-instance mutex and nothing would be measured.
 """
 
@@ -26,7 +26,7 @@ from pathlib import Path
 
 import psutil
 
-from gmail_notifier import config
+from gsend import config
 
 _START_MARKER = " starting"  # the log line the app writes at startup
 _POLL_SECONDS = 0.25
@@ -70,7 +70,7 @@ def _dist_size_mb(path: Path) -> float:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Measure startup and idle RSS/CPU.")
-    parser.add_argument("--exe", help="path to GmailNotifier.exe to launch")
+    parser.add_argument("--exe", help="path to GSend.exe to launch")
     parser.add_argument("--pid", type=int, help="attach to a running process instead")
     parser.add_argument("--minutes", type=float, default=10.0, help="sample duration")
     parser.add_argument("--dist", help="optional dist folder to measure (size only)")

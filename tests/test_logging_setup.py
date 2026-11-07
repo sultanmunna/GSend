@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import logging
 
-from gmail_notifier import logging_setup
+from gsend import logging_setup
 
 
 def test_setup_writes_to_file(tmp_path):
     handlers = logging_setup.setup_logging(console=False, log_dir=tmp_path)
     try:
-        logging.getLogger("gmail_notifier.test").info("startup smoke")
+        logging.getLogger("gsend.test").info("startup smoke")
         log_file = tmp_path / "app.log"
         assert log_file.exists()
         assert "startup smoke" in log_file.read_text(encoding="utf-8")

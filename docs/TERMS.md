@@ -1,10 +1,10 @@
-# Terms of Service — Gmail Tray Notifier
+# Terms of Service — GSend
 
 Last updated: November 7, 2026
 
 ## 1. The service
 
-Gmail Tray Notifier ("the app") is a free, open-source Windows application that displays local tray notifications for new Gmail messages. It runs entirely on your PC and uses Google's Gmail API with read-only access.
+GSend ("the app") is a free, open-source Windows application that displays local tray notifications for new Gmail messages. It runs entirely on your PC and uses Google's Gmail API with read-only access.
 
 ## 2. Your Google account
 

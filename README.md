@@ -1,4 +1,4 @@
-# Gmail Tray Notifier
+# GSend
 
 Android-style Gmail notifications for Windows. A tiny app that lives in the
 system tray, checks your Gmail every 45 seconds and shows a Windows toast when
@@ -23,10 +23,10 @@ telemetry. The app talks only to Google, with a read-only permission.
 
 ## Install
 
-1. Get the `GmailNotifier` folder (from the release or your build — see
+1. Get the `GSend` folder (from the release or your build — see
    `docs/BUILD.md` if you build it yourself) and put it anywhere, e.g.
-   `%LOCALAPPDATA%\Programs\GmailNotifier`.
-2. Start `GmailNotifier.exe`. Optionally pin the tray icon (Windows 11 may hide
+   `%LOCALAPPDATA%\Programs\GSend`.
+2. Start `GSend.exe`. Optionally pin the tray icon (Windows 11 may hide
    new tray icons in the overflow area — drag it onto the taskbar once).
 
 There is no installer required; the optional Inno Setup installer installs
@@ -40,7 +40,7 @@ per-user (no admin rights).
    **"Google hasn't verified this app"** warning screen. This is expected:
 
    > [screenshot placeholder: unverified-app warning screen]
-   > Click **Advanced**, then **Go to Gmail Tray Notifier (unsafe)**, then
+   > Click **Advanced**, then **Go to GSend (unsafe)**, then
    > **Allow** on the permission screen.
 
    The app only ever asks for **read-only** access to notice new mail. It
@@ -60,7 +60,7 @@ Right-click the tray icon → **Settings**:
 | Primary tab only | Only notify for mail in the Primary tab (default, like the phone app) |
 | Start with Windows | Registers the app in the Run key after the first account is added |
 
-Settings live in `%APPDATA%\GmailNotifier\settings.json` — the tray menu's
+Settings live in `%APPDATA%\GSend\settings.json` — the tray menu's
 **Open data folder** opens that folder.
 
 ## Privacy
@@ -93,8 +93,8 @@ Settings live in `%APPDATA%\GmailNotifier\settings.json` — the tray menu's
 1. Right-click the tray icon → **Accounts ▸ [each account] ▸ Remove** (this
    deletes and revokes the stored tokens).
 2. Quit from the tray menu.
-3. Delete the app folder, plus `%APPDATA%\GmailNotifier` and
-   `%LOCALAPPDATA%\GmailNotifier` if you want the settings and logs gone too.
+3. Delete the app folder, plus `%APPDATA%\GSend` and
+   `%LOCALAPPDATA%\GSend` if you want the settings and logs gone too.
 4. If you used the installer, uninstall from Windows "Installed apps".
 
 ## For developers

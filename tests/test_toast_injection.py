@@ -27,11 +27,11 @@ import pytest
 
 winotify = pytest.importorskip("winotify", reason="Windows-only toast library")
 
-from gmail_notifier.gmail_client import parse_message  # noqa: E402
-from gmail_notifier.notifier import Notifier, WinotifyBackend  # noqa: E402
-from gmail_notifier.settings import Settings  # noqa: E402
-from gmail_notifier.state import AppState  # noqa: E402
-from gmail_notifier.text_utils import escape_winotify  # noqa: E402
+from gsend.gmail_client import parse_message  # noqa: E402
+from gsend.notifier import Notifier, WinotifyBackend  # noqa: E402
+from gsend.settings import Settings  # noqa: E402
+from gsend.state import AppState  # noqa: E402
+from gsend.text_utils import escape_winotify  # noqa: E402
 
 HOSTILE_CORPUS = [
     " ; calc.exe ; ",
@@ -44,7 +44,7 @@ HOSTILE_CORPUS = [
     '"@ evil line',  # here-string terminator on a joined message line
     "<toast><text>",
     "&amp;&lt;",
-    "]]><action activationType=\"protocol\" content=\"Run\" arguments=\"https://evil.test/phish\"/>",
+    ']]><action activationType="protocol" content="Run" arguments="https://evil.test/phish"/>',
     "]]>",
     "%s",
     "{0}",
@@ -125,11 +125,11 @@ def test_end_to_end_hostile_mail_cannot_inject(monkeypatch):
         "threadId": "16a7c1f2e3d4b5a6",
         "internalDate": "1730000000000",
         "labelIds": ["INBOX", "UNREAD"],
-        "snippet": "hi $(calc) ]]><action arguments=\"https://evil.test\"/> %s",
+        "snippet": 'hi $(calc) ]]><action arguments="https://evil.test"/> %s',
         "payload": {
             "headers": [
                 {"name": "From", "value": '"$(calc)" <attacker@evil.test>'},
-                {"name": "Subject", "value": "Re: \"]]>\"><script>\"@ `calc` \u202espoof"},
+                {"name": "Subject", "value": 'Re: "]]>"><script>"@ `calc` \u202espoof'},
             ]
         },
     }

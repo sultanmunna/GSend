@@ -1,10 +1,10 @@
-# QA_RESULTS.md — Gmail Tray Notifier manual QA session
+# QA_RESULTS.md — GSend manual QA session
 
 - Commit: `f6d2826` (QA session start)
 - App version: 0.1.0
 - Windows: Windows 11 22H2, build 10.0.22621, 1920x1080 (confirmed by tester)
 - Dates: session started 2026-11-07; Group 1 recorded 2026-11-08
-- Build: `dist\GmailNotifier` from `scripts/build_exe.ps1` (frozen `--self-check` all PASS)
+- Build: `dist\GSend` from `scripts/build_exe.ps1` (frozen `--self-check` all PASS)
 - Rules: no real mail content, addresses or tokens in this file — results are described
   in words and accounts are referred to as account#1, account#2.
 

@@ -1,21 +1,21 @@
-; Inno Setup script for Gmail Tray Notifier (optional installer, DECISIONS D-12).
+; Inno Setup script for GSend (optional installer, DECISIONS D-12).
 ; Per-user install: no admin rights, installs to %LOCALAPPDATA%\Programs.
-; Build:  iscc installer\GmailNotifier.iss   (after scripts\build_exe.ps1)
+; Build:  iscc installer\GSend.iss   (after scripts\build_exe.ps1)
 
-#define AppName "Gmail Tray Notifier"
-#define AppExe "GmailNotifier.exe"
-#define AppVersion GetFileVersion("..\dist\GmailNotifier\" + AppExe)
+#define AppName "GSend"
+#define AppExe "GSend.exe"
+#define AppVersion GetFileVersion("..\dist\GSend\" + AppExe)
 
 [Setup]
-AppId={{7E1A2C44-9C0B-4E1D-9A57-GMAILNOTIF1}
+AppId={{7E1A2C44-9C0B-4E1D-9A57-GSEND000001}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppName}
-DefaultDirName={localappdata}\Programs\GmailNotifier
+DefaultDirName={localappdata}\Programs\GSend
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
-OutputBaseFilename=GmailNotifierSetup
+OutputBaseFilename=GSendSetup
 OutputDir=..\dist\installer
 Compression=lzma2
 SolidCompression=yes
@@ -24,7 +24,7 @@ UninstallDisplayIcon={app}\{#AppExe}
 SetupIconFile=..\assets\app.ico
 
 [Files]
-Source: "..\dist\GmailNotifier\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "..\dist\GSend\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"

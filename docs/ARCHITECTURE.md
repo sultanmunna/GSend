@@ -92,11 +92,11 @@ class Account:
 
 | What | Where | Notes |
 |---|---|---|
-| Refresh token | Windows Credential Manager via `keyring`, service `GmailNotifier`, username = email | Only the refresh token. |
-| Account list | `%APPDATA%\GmailNotifier\accounts.json` | `[{"email": "...", "label": null}]`. No tokens, no mail. |
-| Settings | `%APPDATA%\GmailNotifier\settings.json` | See PRODUCT.md section 7. |
-| Logs | `%LOCALAPPDATA%\GmailNotifier\logs\app.log` | Rotating (e.g. 3 x 512 KB). No mail content, no tokens. |
-| OAuth client config | Bundled with the app (`client_config.json`) | Not in Git. Load order: env `GMAIL_NOTIFIER_CLIENT_CONFIG` path, then bundled resource (`sys._MEIPASS`), then `./client_config.json` for development. |
+| Refresh token | Windows Credential Manager via `keyring`, service `GSend`, username = email | Only the refresh token. |
+| Account list | `%APPDATA%\GSend\accounts.json` | `[{"email": "...", "label": null}]`. No tokens, no mail. |
+| Settings | `%APPDATA%\GSend\settings.json` | See PRODUCT.md section 7. |
+| Logs | `%LOCALAPPDATA%\GSend\logs\app.log` | Rotating (e.g. 3 x 512 KB). No mail content, no tokens. |
+| OAuth client config | Bundled with the app (`client_config.json`) | Not in Git. Load order: env `GSEND_CLIENT_CONFIG` path, then bundled resource (`sys._MEIPASS`), then `./client_config.json` for development. |
 | Mail data | **RAM only** | Never persisted. |
 
 All JSON writes are atomic (write temp file in the same folder, then `os.replace`).
@@ -107,7 +107,7 @@ All JSON writes are atomic (write temp file in the same folder, then `os.replace
 2. `InstalledAppFlow.from_client_config(client_config, SCOPES)`.
 3. `auth._run_local_sign_in(flow, timeout_seconds)` (DECISIONS D-14): bind the loopback server on `localhost` with a random port, build the authorization URL with `prompt="select_account consent"` and PKCE (the flow autogenerates the verifier), open the browser, then wait in a loop until the redirect arrives or 180 s elapse — an aborted browser connection must not end the wait (the library's `run_local_server` does, which left the redirect refused). Raises `AuthCancelled` on timeout.
 4. Build a Gmail service with the returned credentials and call `users().getProfile(userId="me")` to learn `emailAddress`.
-5. `keyring.set_password("GmailNotifier", email, creds.refresh_token)`. If `refresh_token` is missing, raise an error (do not store `None`).
+5. `keyring.set_password("GSend", email, creds.refresh_token)`. If `refresh_token` is missing, raise an error (do not store `None`).
 6. Add the email to `accounts.json` if new; set status OK; wake the poller.
 7. Discard the temporary service and credentials.
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-SERVICE = "GmailNotifier"
+SERVICE = "GSend"
 
 
 class FakeKeyringError(Exception):
@@ -40,6 +40,6 @@ class FakeKeyring:
 @pytest.fixture()
 def fake_keyring(monkeypatch: pytest.MonkeyPatch) -> FakeKeyring:
     fake = FakeKeyring()
-    monkeypatch.setattr("gmail_notifier.auth.keyring", fake)
-    monkeypatch.setattr("gmail_notifier.auth._win_vault_classes", lambda: (FakeVaultBackend,))
+    monkeypatch.setattr("gsend.auth.keyring", fake)
+    monkeypatch.setattr("gsend.auth._win_vault_classes", lambda: (FakeVaultBackend,))
     return fake

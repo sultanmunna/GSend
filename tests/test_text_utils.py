@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 
-from gmail_notifier import text_utils
+from gsend import text_utils
 
 
 def encoded_word(text: str) -> str:

@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from gmail_notifier import security_logging
+from gsend import security_logging
 
 
 @pytest.fixture(autouse=True)

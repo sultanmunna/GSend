@@ -12,12 +12,12 @@ from __future__ import annotations
 
 import threading
 
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.auth import credentials_for
-from gmail_notifier.gmail_client import GmailClient
-from gmail_notifier.poller import Poller
-from gmail_notifier.settings import load as load_settings
-from gmail_notifier.state import AppState
+from gsend.accounts import AccountStore
+from gsend.auth import credentials_for
+from gsend.gmail_client import GmailClient
+from gsend.poller import Poller
+from gsend.settings import load as load_settings
+from gsend.state import AppState
 
 
 def main() -> int:

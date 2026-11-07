@@ -16,11 +16,11 @@ import tracemalloc
 from datetime import UTC, datetime
 from pathlib import Path
 
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.models import Mail
-from gmail_notifier.poller import Poller
-from gmail_notifier.settings import Settings
-from gmail_notifier.state import AppState
+from gsend.accounts import AccountStore
+from gsend.models import Mail
+from gsend.poller import Poller
+from gsend.settings import Settings
+from gsend.state import AppState
 
 CYCLES = 50_000
 _TOLERANCE_KIB = 512  # generous: measured growth over 3k cycles was < 1 KiB

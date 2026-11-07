@@ -33,17 +33,17 @@ from pathlib import Path
 import pytest
 from google.auth.exceptions import RefreshError
 
-from gmail_notifier import app as app_module
-from gmail_notifier import auth, security_logging
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.app import _App
-from gmail_notifier.errors import ReauthRequired
-from gmail_notifier.gmail_client import GmailClient, parse_message
-from gmail_notifier.logging_setup import setup_logging
-from gmail_notifier.models import Mail
-from gmail_notifier.notifier import Notifier
-from gmail_notifier.settings import Settings
-from gmail_notifier.state import AppState
+from gsend import app as app_module
+from gsend import auth, security_logging
+from gsend.accounts import AccountStore
+from gsend.app import _App
+from gsend.errors import ReauthRequired
+from gsend.gmail_client import GmailClient, parse_message
+from gsend.logging_setup import setup_logging
+from gsend.models import Mail
+from gsend.notifier import Notifier
+from gsend.settings import Settings
+from gsend.state import AppState
 
 SUBJECT_CANARY = "CANARY-SUBJ-7f3a"
 SENDER_CANARY = "CANARY-FROM-91bc"
@@ -177,7 +177,12 @@ def _tree_texts(root: Path) -> list[str]:
 
 def _app_temp_files() -> set[str]:
     temp = Path(tempfile.gettempdir())
-    return {p.name for p in temp.glob("*") if "gmailnotifier" in p.name.lower()}
+    # Legacy name included so pre-rename leftovers are still detected.
+    return {
+        p.name
+        for p in temp.glob("*")
+        if "gsend" in p.name.lower() or "gmailnotifier" in p.name.lower()
+    }
 
 
 def _assert_no_matches(canaries: tuple[str, ...], texts: list[str], context: str) -> None:
@@ -279,20 +284,18 @@ def test_secrets_never_reach_persistent_sinks(
             "redirect_uris": ["http://localhost"],
         }
     }
-    fake_keyring.set_password("GmailNotifier", ACCOUNT, FAKE_TOKEN)
+    fake_keyring.set_password("GSend", ACCOUNT, FAKE_TOKEN)
 
     # Loading credentials registers the secret and reads it from the fake vault.
     creds = auth.credentials_for(ACCOUNT, client_config=client_config)
     assert creds.refresh_token == FAKE_TOKEN
-    assert fake_keyring.entries[("GmailNotifier", ACCOUNT)] == FAKE_TOKEN  # allowed place
+    assert fake_keyring.entries[("GSend", ACCOUNT)] == FAKE_TOKEN  # allowed place
 
     # The token path through the Gmail client maps RefreshError to ReauthRequired.
     client = GmailClient(ACCOUNT, credentials=None, service=ExplodingService())
     with pytest.raises(ReauthRequired) as exc_info:
         client.latest_inbox_ids(10, only_primary=True)
-    _assert_no_matches(
-        SECRET_CANARIES, [str(exc_info.value), repr(exc_info.value)], "exception"
-    )
+    _assert_no_matches(SECRET_CANARIES, [str(exc_info.value), repr(exc_info.value)], "exception")
     with pytest.raises(ReauthRequired) as exc_info_mail:
         client.get_mail("any-id")
     _assert_no_matches(
@@ -308,9 +311,9 @@ def test_secrets_never_reach_persistent_sinks(
     def _fail_urlopen(*_args, **_kwargs):
         raise OSError("offline")
 
-    monkeypatch.setattr("gmail_notifier.auth.urlopen", _fail_urlopen)
+    monkeypatch.setattr("gsend.auth.urlopen", _fail_urlopen)
     auth.remove_account(ACCOUNT)
-    assert ("GmailNotifier", ACCOUNT) not in fake_keyring.entries
+    assert ("GSend", ACCOUNT) not in fake_keyring.entries
 
     # Persistent sinks: log files and everything under the test temp dir.
     _assert_no_matches(SECRET_CANARIES, _tree_texts(log_sink), "log files")

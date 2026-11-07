@@ -1,4 +1,4 @@
-# Packages dist\GmailNotifier into a versioned zip plus a SHA256SUMS file.
+# Packages dist\GSend into a versioned zip plus a SHA256SUMS file.
 # Run from the repo root in PowerShell:
 #   .\scripts\package_release.ps1            (real build: for distribution to users)
 #   .\scripts\package_release.ps1 -ScanBuild (scan build: for antivirus services ONLY)
@@ -12,18 +12,18 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 
-$dist = "dist\GmailNotifier"
-if (-not (Test-Path "$dist\GmailNotifier.exe")) {
+$dist = "dist\GSend"
+if (-not (Test-Path "$dist\GSend.exe")) {
     Write-Error "No build found. Run .\scripts\build_exe.ps1 first (add -ScanBuild to match)."
     exit 1
 }
 
-$versionMatch = Select-String -Path "src\gmail_notifier\__init__.py" -Pattern '__version__ = "(.+)"'
-if (-not $versionMatch) { Write-Error "Could not read __version__ from src\gmail_notifier\__init__.py"; exit 1 }
+$versionMatch = Select-String -Path "src\gsend\__init__.py" -Pattern '__version__ = "(.+)"'
+if (-not $versionMatch) { Write-Error "Could not read __version__ from src\gsend\__init__.py"; exit 1 }
 $version = $versionMatch.Matches[0].Groups[1].Value
 $suffix = if ($ScanBuild) { "-scan" } else { "" }
 
-$zip = "dist\GmailNotifier-$version$suffix.zip"
+$zip = "dist\GSend-$version$suffix.zip"
 if (Test-Path $zip) { Remove-Item -Force $zip }
 Compress-Archive -Path "$dist\*" -DestinationPath $zip
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from gmail_notifier import links
+from gsend import links
 
 
 def test_mail_url_quotes_plus_in_email():

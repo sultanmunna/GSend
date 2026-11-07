@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 
-from gmail_notifier.accounts import AccountStore, StoredAccount
+from gsend.accounts import AccountStore, StoredAccount
 
 
 def test_add_and_list_roundtrip(tmp_path):
@@ -75,7 +75,7 @@ def test_file_holds_only_email_and_label(tmp_path):
 
 def test_file_never_contains_token_strings(tmp_path, fake_keyring):
     # The keyring holds a token for the account; the store must never copy it into the file.
-    fake_keyring.set_password("GmailNotifier", "a@example.com", "refresh-token-xyz")
+    fake_keyring.set_password("GSend", "a@example.com", "refresh-token-xyz")
     path = tmp_path / "accounts.json"
     AccountStore(path).add("a@example.com")
     text = path.read_text(encoding="utf-8")

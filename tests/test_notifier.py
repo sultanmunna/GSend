@@ -5,11 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from gmail_notifier import links
-from gmail_notifier.models import Account, AccountStatus, Mail
-from gmail_notifier.notifier import Notifier
-from gmail_notifier.settings import Settings
-from gmail_notifier.state import AppState
+from gsend import links
+from gsend.models import Account, AccountStatus, Mail
+from gsend.notifier import Notifier
+from gsend.settings import Settings
+from gsend.state import AppState
 
 
 @dataclass

@@ -10,7 +10,7 @@ Order matters: each milestone builds on the previous one.
 - [x] Implemented: `config`, `errors`, `models`, `settings`, `text_utils`, `logging_setup`
 - [x] Tests for text_utils (RFC 2047, unicode, snippets, truncation), settings, models
 
-**Acceptance:** `pip install -e ".[dev]"`, `pytest` and `ruff check .` pass; `python -m gmail_notifier` logs a startup line and exits cleanly.
+**Acceptance:** `pip install -e ".[dev]"`, `pytest` and `ruff check .` pass; `python -m gsend` logs a startup line and exits cleanly.
 
 ## M1 — Auth and accounts
 - [x] `auth.py`: client config loading, `add_account_interactive`, `credentials_for`, `remove_account`

@@ -13,12 +13,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.errors import GmailError, ReauthRequired, TransientError
-from gmail_notifier.models import AccountStatus, Mail
-from gmail_notifier.poller import _SEEN_LIMIT, Poller, _AccountPollState
-from gmail_notifier.settings import Settings
-from gmail_notifier.state import AppState
+from gsend.accounts import AccountStore
+from gsend.errors import GmailError, ReauthRequired, TransientError
+from gsend.models import AccountStatus, Mail
+from gsend.poller import _SEEN_LIMIT, Poller, _AccountPollState
+from gsend.settings import Settings
+from gsend.state import AppState
 
 ACCOUNT = "a@example.com"
 

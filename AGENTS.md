@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Entry point for every coding agent working on **Gmail Tray Notifier**. Read this first, then the docs named in your prompt.
+Entry point for every coding agent working on **GSend**. Read this first, then the docs named in your prompt.
 
 ## What this project is
 
@@ -16,7 +16,7 @@ The user signs in with Google once (browser OAuth), can add several Gmail accoun
 
 ## Tech stack
 
-- Python 3.11+ (Windows only), `src/` layout, package `gmail_notifier`
+- Python 3.11+ (Windows only), `src/` layout, package `gsend`
 - Tray: `pystray` + `Pillow` (icons drawn at runtime)
 - Google: `google-api-python-client`, `google-auth`, `google-auth-oauthlib` (installed-app loopback flow with PKCE)
 - Secrets: `keyring` (Windows Credential Manager)
@@ -29,7 +29,7 @@ The user signs in with Google once (browser OAuth), can add several Gmail accoun
 1. **Local only.** No server, cloud database, analytics, crash reporter or update ping. Allowed network hosts: `accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`.
 2. **One scope:** `https://www.googleapis.com/auth/gmail.readonly`. Never request more. Never call send, modify, trash or delete endpoints.
 3. **Mail content stays in memory.** Sender, subject, snippet and message/thread IDs must never be written to disk, logs, crash dumps, temp files or the clipboard.
-4. **Tokens:** only the refresh token, only in Windows Credential Manager via `keyring` (service `GmailNotifier`, username = account email). Never in files, env vars, logs or error messages.
+4. **Tokens:** only the refresh token, only in Windows Credential Manager via `keyring` (service `GSend`, username = account email). Never in files, env vars, logs or error messages.
 5. **Secrets stay out of Git.** `client_config.json` is git-ignored; only `client_config.example.json` is committed.
 6. **No windows in v1.** The UI is the tray icon, its menu and toasts. No Tkinter, Qt, web views or GPUI.
 7. **Never block the tray thread.** Network and OAuth work run in worker threads. Google API service objects are not thread-safe: create and use each in one thread only.
@@ -41,7 +41,7 @@ The user signs in with Google once (browser OAuth), can add several Gmail accoun
 Responsibilities and layering rules are in `docs/ARCHITECTURE.md`.
 
 ```
-src/gmail_notifier/
+src/gsend/
   __main__.py app.py config.py errors.py models.py settings.py text_utils.py
   formatting.py links.py accounts.py auth.py gmail_client.py state.py poller.py
   tray.py notifier.py autostart.py logging_setup.py
@@ -56,7 +56,7 @@ docs/       project documentation
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-python -m gmail_notifier        # run the app
+python -m gsend        # run the app
 pytest                          # tests
 ruff check . ; ruff format .    # lint + format
 pip-audit                       # dependency audit

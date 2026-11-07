@@ -18,11 +18,11 @@ import ctypes
 import logging
 import sys
 
-from gmail_notifier import app, config, logging_setup
+from gsend import app, config, logging_setup
 
 logger = logging.getLogger(__name__)
 
-_MUTEX_NAME = "Local\\GmailNotifierSingleInstance"
+_MUTEX_NAME = f"Local\\{config.APP_NAME}SingleInstance"
 _ERROR_ALREADY_EXISTS = 183
 
 _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -43,7 +43,7 @@ def _self_check_results() -> list[tuple[str, bool]]:
     Names may carry the app version (public); no check ever returns or prints
     configuration values, tokens, addresses or mail content.
     """
-    from gmail_notifier import __version__
+    from gsend import __version__
 
     results: list[tuple[str, bool]] = []
     results.append((f"app version ({__version__})", _try(_check_version)))
@@ -66,27 +66,27 @@ def _try(check) -> bool:
 
 
 def _check_version() -> bool:
-    from gmail_notifier import __version__
+    from gsend import __version__
 
     return bool(__version__)
 
 
 def _check_settings() -> bool:
-    from gmail_notifier.settings import load as load_settings
+    from gsend.settings import load as load_settings
 
     load_settings()  # read-only; a corrupt file recovers to defaults
     return True
 
 
 def _check_accounts() -> bool:
-    from gmail_notifier.accounts import AccountStore
+    from gsend.accounts import AccountStore
 
     AccountStore().list()  # read-only
     return True
 
 
 def _check_client_config() -> bool:
-    from gmail_notifier import auth
+    from gsend import auth
 
     cfg = auth.load_client_config()
     auth._validate_installed_config(cfg.get("installed") or {})
@@ -94,7 +94,7 @@ def _check_client_config() -> bool:
 
 
 def _check_keyring() -> bool:
-    from gmail_notifier import auth
+    from gsend import auth
 
     return auth._keyring_is_secure(auth.keyring.get_keyring())
 
@@ -126,7 +126,7 @@ def _check_pystray() -> bool:
 
 
 def _check_icons() -> bool:
-    from gmail_notifier.tray import IconState, draw_icon
+    from gsend.tray import IconState, draw_icon
 
     return draw_icon(IconState.IDLE).size == (32, 32)
 
@@ -171,9 +171,7 @@ def _run_self_check() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        prog="gmail-notifier", description="Gmail Tray Notifier tray app."
-    )
+    parser = argparse.ArgumentParser(prog="gsend", description="GSend tray app.")
     parser.add_argument("--self-check", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     if args.self_check:

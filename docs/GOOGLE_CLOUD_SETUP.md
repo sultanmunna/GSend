@@ -6,10 +6,11 @@ Google renames console screens from time to time. If a label differs, look for t
 
 ## Steps
 
-1. Open https://console.cloud.google.com and create a project (for example `gmail-notifier`).
+1. Open https://console.cloud.google.com and create a project (for example `gsend`).
 2. **APIs & Services → Library**, search **Gmail API**, click **Enable**.
 3. Open **Google Auth Platform** (older name: OAuth consent screen) and click **Get started**:
-   - App name, user support email
+   - App name: **GSend** (this is what the unverified-app warning screen shows; if it still says an older name, change it here — D-23)
+   - User support email
    - Audience: **External**
    - Contact email, agree to the policy, create
 4. **Data Access → Add or remove scopes**, add `https://www.googleapis.com/auth/gmail.readonly`, save. This is a *restricted* scope, which is expected.

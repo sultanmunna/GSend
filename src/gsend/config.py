@@ -1,4 +1,4 @@
-"""Constants and filesystem paths for Gmail Tray Notifier.
+"""Constants and filesystem paths for GSend.
 
 Central place for the app name, the keyring service name, the single OAuth
 scope, the Google URLs the app is allowed to contact, and the locations of the
@@ -11,11 +11,17 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-APP_NAME = "GmailNotifier"
-DISPLAY_NAME = "Gmail Tray Notifier"
+APP_NAME = "GSend"
+DISPLAY_NAME = "GSend"
 
 # Service name under which refresh tokens are stored in Windows Credential Manager.
-KEYRING_SERVICE = "GmailNotifier"
+KEYRING_SERVICE = "GSend"
+
+# Pre-rename names (see docs/DECISIONS.md D-23). Used ONLY by the one-time
+# migrations that move tokens, files and the autostart entry over to GSend;
+# never used for new writes.
+LEGACY_APP_NAME = "GmailNotifier"
+LEGACY_KEYRING_SERVICE = "GmailNotifier"
 
 # Hard rule 2: exactly one scope, read-only. Never add anything here.
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]

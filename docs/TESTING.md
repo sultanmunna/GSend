@@ -63,4 +63,4 @@ Mark each: pass / fail / n.a. Record the Windows version and app version.
 
 ## 4. Privacy test
 
-After a session with real mail: search `%LOCALAPPDATA%\GmailNotifier` and `%APPDATA%\GmailNotifier` for a known subject line and sender name. There must be **zero** matches. Check Credential Manager contains only refresh tokens for GmailNotifier.
+After a session with real mail: search `%LOCALAPPDATA%\GSend` and `%APPDATA%\GSend` for a known subject line and sender name. There must be **zero** matches. Check Credential Manager contains only refresh tokens for GSend.

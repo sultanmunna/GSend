@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from gmail_notifier import autostart
+from gsend import autostart
 
 
 class FakeRegistry:
@@ -36,7 +36,7 @@ def test_enable_disable_roundtrip(monkeypatch):
     assert autostart.is_enabled() is False
     autostart.enable()
     assert autostart.is_enabled() is True
-    assert "gmail_notifier" in fake.values["GmailNotifier"]
+    assert "gsend" in fake.values["GSend"]
     autostart.disable()
     assert autostart.is_enabled() is False
 
@@ -51,11 +51,25 @@ def test_command_from_source_uses_pythonw(monkeypatch):
     monkeypatch.setattr(sys, "frozen", False, raising=False)
     command = autostart.command()
     assert "pythonw.exe" in command
-    assert "-m gmail_notifier" in command
+    assert "-m gsend" in command
 
 
 def test_command_when_frozen_is_the_executable(monkeypatch):
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     command = autostart.command()
     assert command == f'"{sys.executable}"'
-    assert "-m gmail_notifier" not in command
+    assert "-m gsend" not in command
+
+
+def test_migrate_legacy_value_moves_entry_to_current_name(monkeypatch):
+    fake = install_fake(monkeypatch)
+    fake.values["GmailNotifier"] = '"C:/pythonw.exe" -m gmail_notifier'
+    autostart.migrate_legacy_value()
+    assert "GmailNotifier" not in fake.values
+    assert "gsend" in fake.values["GSend"]
+
+
+def test_migrate_legacy_value_without_legacy_entry_is_noop(monkeypatch):
+    fake = install_fake(monkeypatch)
+    autostart.migrate_legacy_value()
+    assert fake.values == {}

@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gmail-notifier"
+name = "gsend"
 version = "0.1.0"
-description = "Gmail Tray Notifier: Android-style Gmail notifications for the Windows tray. 100% local."
+description = "GSend: Android-style Gmail notifications for the Windows tray. 100% local."
 requires-python = ">=3.11"
 dependencies = [
     "pystray>=0.19",
@@ -34,7 +34,7 @@ dev = [
 ]
 
 [project.scripts]
-gmail-notifier = "gmail_notifier.__main__:main"
+gsend = "gsend.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -48,7 +48,7 @@ src = ["src", "tests"]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["gmail_notifier"]
+known-first-party = ["gsend"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

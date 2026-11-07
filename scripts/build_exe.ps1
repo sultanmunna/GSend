@@ -1,4 +1,4 @@
-# Builds dist/GmailNotifier with PyInstaller from a clean venv (DECISIONS D-12/D-13).
+# Builds dist/GSend with PyInstaller from a clean venv (DECISIONS D-12/D-13).
 # Run from the repo root in PowerShell:  .\scripts\build_exe.ps1
 # -ScanBuild bundles client_config.example.json (fake client) instead of the real
 # one; that output is for antivirus/scan services ONLY (docs/BUILD.md), not for use.
@@ -30,18 +30,18 @@ if ($LASTEXITCODE -ne 0) { Write-Error "make_icons failed"; exit 1 }
 & .venv-build\Scripts\python.exe -m PyInstaller `
     --noconfirm --clean `
     --onedir --windowed `
-    --name GmailNotifier `
+    --name GSend `
     --paths src `
     --icon assets\app.ico `
     --add-data "$ClientConfig;." `
     --version-file assets\version_info.py `
     --hidden-import keyring.backends.Windows `
     --hidden-import pystray._win32 `
-    src\gmail_notifier\__main__.py
+    src\gsend\__main__.py
 if ($LASTEXITCODE -ne 0) { Write-Error "PyInstaller failed"; exit 1 }
 
 Write-Host ""
-Write-Host "Build output: $Root\dist\GmailNotifier\GmailNotifier.exe"
+Write-Host "Build output: $Root\dist\GSend\GSend.exe"
 if ($ScanBuild) {
     Write-Host "SCAN BUILD: bundled client_config.example.json (fake client)."
     Write-Host "For antivirus/scan services ONLY - do not distribute for daily use."

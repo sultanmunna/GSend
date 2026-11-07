@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 from urllib.parse import quote
 
-from gmail_notifier import config
+from gsend import config
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+$")
 _MESSAGE_ID_RE = re.compile(r"^[0-9a-fA-F]+$")

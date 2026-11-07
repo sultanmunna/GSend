@@ -13,7 +13,7 @@ import threading
 from collections.abc import Callable, Iterable
 from dataclasses import replace
 
-from gmail_notifier.models import Account, AccountStatus, Mail
+from gsend.models import Account, AccountStatus, Mail
 
 _MAX_OPENED = 500  # bounded like the poller's seen_ids so memory stays flat
 

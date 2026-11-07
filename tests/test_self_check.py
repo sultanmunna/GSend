@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from gmail_notifier import __main__ as main_module
-from gmail_notifier.errors import ConfigError
+from gsend import __main__ as main_module
+from gsend.errors import ConfigError
 
 VALID_CONFIG = {
     "installed": {
@@ -27,9 +27,7 @@ VALID_CONFIG = {
 @pytest.fixture()
 def deterministic_env(fake_keyring, monkeypatch):
     """Client config and keyring faked; everything else runs for real."""
-    monkeypatch.setattr(
-        "gmail_notifier.auth.load_client_config", lambda: VALID_CONFIG
-    )
+    monkeypatch.setattr("gsend.auth.load_client_config", lambda: VALID_CONFIG)
     return fake_keyring
 
 
@@ -63,7 +61,7 @@ def test_self_check_fails_when_client_config_is_missing(monkeypatch, capsys):
     def raise_missing():
         raise ConfigError("no usable client_config.json found")
 
-    monkeypatch.setattr("gmail_notifier.auth.load_client_config", raise_missing)
+    monkeypatch.setattr("gsend.auth.load_client_config", raise_missing)
     exit_code = main_module.main(["--self-check"])
     output = capsys.readouterr().out
     assert exit_code == 1
@@ -72,7 +70,7 @@ def test_self_check_fails_when_client_config_is_missing(monkeypatch, capsys):
 
 
 def test_self_check_fails_when_keyring_is_insecure(fake_keyring, monkeypatch, capsys):
-    monkeypatch.setattr("gmail_notifier.auth.load_client_config", lambda: VALID_CONFIG)
+    monkeypatch.setattr("gsend.auth.load_client_config", lambda: VALID_CONFIG)
 
     class PlainFileBackend:
         """Not Windows Credential Manager."""

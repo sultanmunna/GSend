@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from gmail_notifier.models import Account, AccountStatus, Mail
+from gsend.models import Account, AccountStatus, Mail
 
 
 def make_mail(**overrides: object) -> Mail:

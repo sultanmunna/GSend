@@ -12,10 +12,10 @@ from __future__ import annotations
 
 import argparse
 
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.auth import credentials_for
-from gmail_notifier.errors import ConfigError, GmailError, ReauthRequired
-from gmail_notifier.gmail_client import GmailClient
+from gsend.accounts import AccountStore
+from gsend.auth import credentials_for
+from gsend.errors import ConfigError, GmailError, ReauthRequired
+from gsend.gmail_client import GmailClient
 
 
 def main(argv: list[str] | None = None) -> int:

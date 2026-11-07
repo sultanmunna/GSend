@@ -18,8 +18,8 @@ from urllib.parse import urlparse
 
 import pytest
 
-from gmail_notifier import auth, config, security_logging
-from gmail_notifier.errors import (
+from gsend import auth, config, security_logging
+from gsend.errors import (
     AuthCancelled,
     ConfigError,
     GmailError,
@@ -137,7 +137,7 @@ def test_add_account_stores_refresh_token_under_service_key(fake_flow, fake_keyr
     _complete_redirect(_wait_for_redirect_uri())
     thread.join(timeout=10)
     assert result.get("email") == "user@example.com"
-    assert fake_keyring.get_password("GmailNotifier", "user@example.com") == "refresh-token-abc"
+    assert fake_keyring.get_password("GSend", "user@example.com") == "refresh-token-abc"
 
 
 def test_add_account_uses_pkce_select_account_and_localhost(fake_flow, browser_sim):
@@ -179,7 +179,7 @@ def test_sign_in_survives_reset_connection(fake_flow, fake_keyring, browser_sim)
     fetch = FakeFlow.last_fetch_kwargs
     assert fetch is not None
     assert fetch["authorization_response"].startswith("https://localhost")
-    assert fake_keyring.get_password("GmailNotifier", "user@example.com") == "refresh-token-abc"
+    assert fake_keyring.get_password("GSend", "user@example.com") == "refresh-token-abc"
 
 
 def test_add_account_without_refresh_token_raises_and_stores_nothing(
@@ -207,7 +207,7 @@ def test_add_account_uses_default_client_config_loader(
 
 
 def test_credentials_for_builds_from_stored_token(fake_keyring):
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    fake_keyring.set_password("GSend", "user@example.com", "stored-token")
     creds = auth.credentials_for("user@example.com", client_config=FAKE_CONFIG)
     assert creds.refresh_token == "stored-token"
     assert creds.token_uri == "https://oauth2.googleapis.com/token"
@@ -222,7 +222,7 @@ def test_credentials_for_missing_token_raises_reauth(fake_keyring):
 
 
 def test_credentials_for_malformed_config_raises_config_error(fake_keyring):
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    fake_keyring.set_password("GSend", "user@example.com", "stored-token")
     with pytest.raises(ConfigError):
         auth.credentials_for("user@example.com", client_config={"installed": {}})
 
@@ -237,7 +237,7 @@ def test_add_account_refuses_insecure_keyring_backend(fake_keyring, monkeypatch)
 
 
 def test_credentials_for_refuses_insecure_keyring_backend(fake_keyring, monkeypatch):
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    fake_keyring.set_password("GSend", "user@example.com", "stored-token")
 
     class PlainFileBackend:
         """A keyring backend that is not Windows Credential Manager."""
@@ -276,7 +276,7 @@ def test_secrets_become_registered_on_sign_in_and_load(fake_flow, fake_keyring, 
 
 def test_has_token(fake_keyring):
     assert auth.has_token("user@example.com") is False
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "t")
+    fake_keyring.set_password("GSend", "user@example.com", "t")
     assert auth.has_token("user@example.com") is True
 
 
@@ -295,7 +295,7 @@ class FakeResponse:
 
 
 def test_remove_account_deletes_token_and_revokes(fake_keyring, monkeypatch):
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    fake_keyring.set_password("GSend", "user@example.com", "stored-token")
     calls: dict[str, str] = {}
 
     def fake_urlopen(request, timeout=None):
@@ -305,20 +305,20 @@ def test_remove_account_deletes_token_and_revokes(fake_keyring, monkeypatch):
 
     monkeypatch.setattr(auth, "urlopen", fake_urlopen)
     auth.remove_account("user@example.com")
-    assert fake_keyring.get_password("GmailNotifier", "user@example.com") is None
+    assert fake_keyring.get_password("GSend", "user@example.com") is None
     assert calls["url"] == "https://oauth2.googleapis.com/revoke"
     assert "stored-token" in calls["body"]
 
 
 def test_remove_account_revoke_failure_is_ignored(fake_keyring, monkeypatch):
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    fake_keyring.set_password("GSend", "user@example.com", "stored-token")
 
     def failing_urlopen(request, timeout=None):
         raise OSError("network down")
 
     monkeypatch.setattr(auth, "urlopen", failing_urlopen)
     auth.remove_account("user@example.com")  # must not raise
-    assert fake_keyring.get_password("GmailNotifier", "user@example.com") is None
+    assert fake_keyring.get_password("GSend", "user@example.com") is None
 
 
 def test_remove_account_without_token_is_idempotent(fake_keyring, monkeypatch):
@@ -335,12 +335,12 @@ def test_remove_account_without_token_is_idempotent(fake_keyring, monkeypatch):
 def test_load_client_config_env_path(tmp_path, monkeypatch):
     config_file = tmp_path / "client_config.json"
     config_file.write_text(json.dumps(FAKE_CONFIG), encoding="utf-8")
-    monkeypatch.setenv("GMAIL_NOTIFIER_CLIENT_CONFIG", str(config_file))
+    monkeypatch.setenv("GSEND_CLIENT_CONFIG", str(config_file))
     assert auth.load_client_config() == FAKE_CONFIG
 
 
 def test_load_client_config_cwd_fallback(tmp_path, monkeypatch):
-    monkeypatch.delenv("GMAIL_NOTIFIER_CLIENT_CONFIG", raising=False)
+    monkeypatch.delenv("GSEND_CLIENT_CONFIG", raising=False)
     config_file = tmp_path / "client_config.json"
     config_file.write_text(json.dumps(FAKE_CONFIG), encoding="utf-8")
     monkeypatch.chdir(tmp_path)
@@ -348,7 +348,7 @@ def test_load_client_config_cwd_fallback(tmp_path, monkeypatch):
 
 
 def test_load_client_config_missing_raises(tmp_path, monkeypatch):
-    monkeypatch.delenv("GMAIL_NOTIFIER_CLIENT_CONFIG", raising=False)
+    monkeypatch.delenv("GSEND_CLIENT_CONFIG", raising=False)
     monkeypatch.chdir(tmp_path)  # no client_config.json anywhere reachable
     with pytest.raises(ConfigError):
         auth.load_client_config()
@@ -357,7 +357,7 @@ def test_load_client_config_missing_raises(tmp_path, monkeypatch):
 def test_load_client_config_wrong_shape_raises(tmp_path, monkeypatch):
     config_file = tmp_path / "client_config.json"
     config_file.write_text('{"web": {}}', encoding="utf-8")  # not an "installed" client
-    monkeypatch.setenv("GMAIL_NOTIFIER_CLIENT_CONFIG", str(config_file))
+    monkeypatch.setenv("GSEND_CLIENT_CONFIG", str(config_file))
     monkeypatch.chdir(tmp_path)  # keep the real ./client_config.json out of reach
     with pytest.raises(ConfigError):
         auth.load_client_config()
@@ -386,14 +386,14 @@ def test_add_account_stores_token_under_normalized_email(fake_flow, fake_keyring
     )
     email = auth.add_account_interactive(client_config=FAKE_CONFIG)
     assert email == "mixedcase@gmail.com"
-    assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") is not None
+    assert fake_keyring.get_password("GSend", "mixedcase@gmail.com") is not None
 
 
 # --- OAuth endpoint validation (SECURITY section 3): only Google hosts --------
 
 
 def test_credentials_for_refuses_tampered_token_uri(fake_keyring):
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    fake_keyring.set_password("GSend", "user@example.com", "stored-token")
     tampered = {"installed": dict(FAKE_CONFIG["installed"], token_uri="https://evil.test/token")}
     with pytest.raises(ConfigError):
         auth.credentials_for("user@example.com", client_config=tampered)
@@ -401,15 +401,13 @@ def test_credentials_for_refuses_tampered_token_uri(fake_keyring):
 
 def test_credentials_for_uses_only_the_google_token_endpoint(fake_keyring):
     """Even with a valid config, the credential is pinned to the Google endpoint."""
-    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    fake_keyring.set_password("GSend", "user@example.com", "stored-token")
     creds = auth.credentials_for("user@example.com", client_config=FAKE_CONFIG)
     assert creds.token_uri == "https://oauth2.googleapis.com/token"
 
 
 def test_add_account_refuses_tampered_auth_uri(fake_flow, fake_keyring):
-    tampered = {
-        "installed": dict(FAKE_CONFIG["installed"], auth_uri="https://evil.test/consent")
-    }
+    tampered = {"installed": dict(FAKE_CONFIG["installed"], auth_uri="https://evil.test/consent")}
     with pytest.raises(ConfigError):
         auth.add_account_interactive(client_config=tampered)
 
@@ -440,9 +438,7 @@ class _FakeServer:
         self.timeout = None
 
     def handle_request(self):
-        self.app.last_request_uri = (
-            "http://localhost:57571/?code=fake-code&state=fake-state"
-        )
+        self.app.last_request_uri = "http://localhost:57571/?code=fake-code&state=fake-state"
 
     def server_close(self):
         pass
@@ -454,7 +450,7 @@ def test_fetch_token_passes_a_timeout(fake_flow, monkeypatch):
         "wsgiref.simple_server.make_server", lambda _h, _p, app, **_kw: _FakeServer(app)
     )
     fake_browser = SimpleNamespace(open=lambda *_a, **_k: False)
-    monkeypatch.setattr("gmail_notifier.auth.webbrowser", fake_browser)
+    monkeypatch.setattr("gsend.auth.webbrowser", fake_browser)
     credentials = auth._run_local_sign_in(fake_flow(), timeout_seconds=5)
     assert credentials.refresh_token == "refresh-token-abc"
     kwargs = fake_flow.last_fetch_kwargs
@@ -468,25 +464,25 @@ def test_fetch_token_passes_a_timeout(fake_flow, monkeypatch):
 
 
 def test_migrate_key_case_moves_token_to_normalized_key(fake_keyring):
-    fake_keyring.set_password("GmailNotifier", "MixedCase@Gmail.COM", "stored-token")
+    fake_keyring.set_password("GSend", "MixedCase@Gmail.COM", "stored-token")
     result = auth.migrate_key_case("MixedCase@Gmail.COM")
     assert result == "mixedcase@gmail.com"
-    assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") == "stored-token"
-    assert fake_keyring.get_password("GmailNotifier", "MixedCase@Gmail.COM") is None
+    assert fake_keyring.get_password("GSend", "mixedcase@gmail.com") == "stored-token"
+    assert fake_keyring.get_password("GSend", "MixedCase@Gmail.COM") is None
 
 
 def test_migrate_key_case_does_not_overwrite_normalized_entry(fake_keyring):
-    fake_keyring.set_password("GmailNotifier", "MixedCase@Gmail.COM", "old-token")
-    fake_keyring.set_password("GmailNotifier", "mixedcase@gmail.com", "new-token")
+    fake_keyring.set_password("GSend", "MixedCase@Gmail.COM", "old-token")
+    fake_keyring.set_password("GSend", "mixedcase@gmail.com", "new-token")
     result = auth.migrate_key_case("MixedCase@Gmail.COM")
     assert result == "mixedcase@gmail.com"
-    assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") == "new-token"
-    assert fake_keyring.get_password("GmailNotifier", "MixedCase@Gmail.COM") is None
+    assert fake_keyring.get_password("GSend", "mixedcase@gmail.com") == "new-token"
+    assert fake_keyring.get_password("GSend", "MixedCase@Gmail.COM") is None
 
 
 def test_migrate_key_case_reports_normalized_key_without_token_copy(fake_keyring):
     """Keyring already normalized but accounts.json holds the mixed-case row."""
-    fake_keyring.set_password("GmailNotifier", "mixedcase@gmail.com", "stored-token")
+    fake_keyring.set_password("GSend", "mixedcase@gmail.com", "stored-token")
     result = auth.migrate_key_case("MixedCase@Gmail.COM")
     assert result == "mixedcase@gmail.com"
     assert len(fake_keyring.entries) == 1
@@ -504,7 +500,7 @@ def test_migrate_key_case_noop_cases(fake_keyring):
 
 
 def test_migrate_key_case_fails_closed_on_keyring_error(fake_keyring, monkeypatch):
-    fake_keyring.set_password("GmailNotifier", "MixedCase@Gmail.COM", "stored-token")
+    fake_keyring.set_password("GSend", "MixedCase@Gmail.COM", "stored-token")
 
     class PlainFileBackend:
         """Not Credential Manager: the guard must refuse to touch tokens."""
@@ -513,3 +509,57 @@ def test_migrate_key_case_fails_closed_on_keyring_error(fake_keyring, monkeypatc
     assert auth.migrate_key_case("MixedCase@Gmail.COM") is None
     # nothing was copied anywhere
     assert len(fake_keyring.entries) == 1
+
+
+# --- keyring service migration (D-23 rename) -----------------------------------
+
+
+def test_get_stored_token_migrates_legacy_service_entry(fake_keyring):
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "legacy-token")
+    assert auth._get_stored_token("user@example.com") == "legacy-token"
+    assert fake_keyring.get_password("GSend", "user@example.com") == "legacy-token"
+    assert fake_keyring.get_password("GmailNotifier", "user@example.com") is None
+
+
+def test_get_stored_token_prefers_current_service(fake_keyring):
+    fake_keyring.set_password("GSend", "user@example.com", "current-token")
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "legacy-token")
+    assert auth._get_stored_token("user@example.com") == "current-token"
+    # the legacy entry stays untouched when the current one already exists
+    assert fake_keyring.get_password("GmailNotifier", "user@example.com") == "legacy-token"
+
+
+def test_get_stored_token_without_any_entry_is_none(fake_keyring):
+    assert auth._get_stored_token("ghost@example.com") is None
+
+
+def test_get_stored_token_keeps_copy_when_legacy_delete_fails(fake_keyring, monkeypatch):
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "legacy-token")
+
+    def failing_delete(service, username):
+        raise RuntimeError("entry locked")
+
+    monkeypatch.setattr(fake_keyring, "delete_password", failing_delete)
+    assert auth._get_stored_token("user@example.com") == "legacy-token"
+    assert fake_keyring.get_password("GSend", "user@example.com") == "legacy-token"
+
+
+def test_credentials_for_uses_migrated_legacy_token(fake_keyring):
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "legacy-token")
+    creds = auth.credentials_for("user@example.com", client_config=FAKE_CONFIG)
+    assert creds.refresh_token == "legacy-token"
+    assert fake_keyring.get_password("GSend", "user@example.com") == "legacy-token"
+
+
+def test_has_token_finds_and_migrates_legacy_entry(fake_keyring):
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "legacy-token")
+    assert auth.has_token("user@example.com") is True
+    assert fake_keyring.get_password("GSend", "user@example.com") == "legacy-token"
+
+
+def test_remove_account_cleans_both_service_entries(fake_keyring, monkeypatch):
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "legacy-token")
+    monkeypatch.setattr(auth, "urlopen", lambda request, timeout=None: FakeResponse())
+    auth.remove_account("user@example.com")
+    assert fake_keyring.get_password("GmailNotifier", "user@example.com") is None
+    assert fake_keyring.get_password("GSend", "user@example.com") is None

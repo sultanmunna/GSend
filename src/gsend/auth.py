@@ -31,8 +31,8 @@ import keyring
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow, _WSGIRequestHandler
 
-from gmail_notifier import config, security_logging
-from gmail_notifier.errors import (
+from gsend import config, security_logging
+from gsend.errors import (
     AuthCancelled,
     ConfigError,
     GmailError,
@@ -60,12 +60,12 @@ _EMAIL_SHAPE = re.compile(r"^[^@\s]+@[^@\s]+$")
 def load_client_config() -> dict:
     """Load the OAuth client config, in the load order of docs/ARCHITECTURE.md section 5:
 
-    env `GMAIL_NOTIFIER_CLIENT_CONFIG` path, then the bundled resource
+    env `GSEND_CLIENT_CONFIG` path, then the bundled resource
     (PyInstaller's `sys._MEIPASS`), then `./client_config.json` for development.
     Raises `ConfigError` when no usable file is found.
     """
     candidates: list[Path] = []
-    env_path = os.environ.get("GMAIL_NOTIFIER_CLIENT_CONFIG")
+    env_path = os.environ.get("GSEND_CLIENT_CONFIG")
     if env_path:
         candidates.append(Path(env_path))
     bundled_dir = getattr(sys, "_MEIPASS", None)
@@ -82,7 +82,7 @@ def load_client_config() -> dict:
             logger.debug("client config loaded")
             return data
     raise ConfigError(
-        "no usable client_config.json found; set GMAIL_NOTIFIER_CLIENT_CONFIG "
+        "no usable client_config.json found; set GSEND_CLIENT_CONFIG "
         "or place the file next to the app (see docs/GOOGLE_CLOUD_SETUP.md)"
     )
 
@@ -179,6 +179,32 @@ def add_account_interactive(timeout_seconds: int = 180, client_config: dict | No
     return email
 
 
+def _get_stored_token(email: str) -> str | None:
+    """Read the stored refresh token, migrating it from the legacy service once.
+
+    D-23: tokens signed in before the GSend rename sit under the legacy
+    service name in Credential Manager. The first read after the rename copies
+    the token to the current service and deletes the legacy entry, so later
+    reads (including dev scripts) find it directly. Read errors propagate to
+    the caller; a failed legacy delete is logged by type only (the token is
+    already copied). Never logs the token.
+    """
+    token = keyring.get_password(config.KEYRING_SERVICE, email)
+    if token is not None:
+        return token
+    legacy = keyring.get_password(config.LEGACY_KEYRING_SERVICE, email)
+    if legacy is None:
+        return None
+    security_logging.register_secret(legacy)
+    keyring.set_password(config.KEYRING_SERVICE, email, legacy)
+    try:
+        keyring.delete_password(config.LEGACY_KEYRING_SERVICE, email)
+    except Exception as exc:
+        logger.warning("legacy token delete failed (%s)", type(exc).__name__)
+    logger.info("token migrated to the current keyring service")
+    return legacy
+
+
 def credentials_for(email: str, client_config: dict | None = None) -> Credentials:
     """Rebuild polling credentials from the stored refresh token.
 
@@ -187,7 +213,7 @@ def credentials_for(email: str, client_config: dict | None = None) -> Credential
     and `ReauthRequired` when no token is stored for the account.
     """
     _ensure_secure_keyring()
-    refresh_token = keyring.get_password(config.KEYRING_SERVICE, email)
+    refresh_token = _get_stored_token(email)
     if not refresh_token:
         raise ReauthRequired("no stored token for this account; sign in again")
     security_logging.register_secret(refresh_token)
@@ -253,15 +279,18 @@ def remove_account(email: str) -> None:
     """
     try:
         token = keyring.get_password(config.KEYRING_SERVICE, email)
+        if token is None:
+            token = keyring.get_password(config.LEGACY_KEYRING_SERVICE, email)
     except Exception as exc:
         logger.warning("token read failed (%s)", type(exc).__name__)
         token = None
     security_logging.register_secret(token)
-    try:
-        keyring.delete_password(config.KEYRING_SERVICE, email)
-    except Exception as exc:
-        # Also fires when the entry is already gone; removal stays idempotent.
-        logger.warning("token delete failed (%s)", type(exc).__name__)
+    for service in (config.KEYRING_SERVICE, config.LEGACY_KEYRING_SERVICE):
+        try:
+            keyring.delete_password(service, email)
+        except Exception as exc:
+            # Also fires when the entry is already gone; removal stays idempotent.
+            logger.warning("token delete failed (%s)", type(exc).__name__)
     if token:
         _revoke_token(token)
     logger.info("account removed; token deleted")
@@ -271,7 +300,7 @@ def remove_account(email: str) -> None:
 def has_token(email: str) -> bool:
     """Whether a refresh token is stored for the account; keyring errors count as no."""
     try:
-        return keyring.get_password(config.KEYRING_SERVICE, email) is not None
+        return _get_stored_token(email) is not None
     except Exception as exc:
         logger.warning("token read failed (%s)", type(exc).__name__)
         return False

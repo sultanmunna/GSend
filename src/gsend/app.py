@@ -10,22 +10,23 @@ The M5 milestone replaces the stub notifier with real toasts.
 from __future__ import annotations
 
 import logging
+import shutil
 import threading
 import webbrowser
 from collections.abc import Callable
 from dataclasses import replace
 
-from gmail_notifier import auth, autostart, config, links, logging_setup
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.gmail_client import GmailClient
-from gmail_notifier.models import Account, AccountStatus, Mail
-from gmail_notifier.notifier import Notifier
-from gmail_notifier.poller import Poller
-from gmail_notifier.settings import Settings
-from gmail_notifier.settings import load as load_settings
-from gmail_notifier.settings import save as save_settings
-from gmail_notifier.state import AppState
-from gmail_notifier.tray import Tray, TrayCallbacks
+from gsend import auth, autostart, config, links, logging_setup
+from gsend.accounts import AccountStore
+from gsend.gmail_client import GmailClient
+from gsend.models import Account, AccountStatus, Mail
+from gsend.notifier import Notifier
+from gsend.poller import Poller
+from gsend.settings import Settings
+from gsend.settings import load as load_settings
+from gsend.settings import save as save_settings
+from gsend.state import AppState
+from gsend.tray import Tray, TrayCallbacks
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +216,7 @@ class _App:
             # The user picked a different Google account: keep it as a new account.
             logger.info("sign-in returned a different account than requested")
             self._notifier.notify_message(
-                "Gmail Notifier: account added",
+                "GSend: account added",
                 f"You signed in as {actual} instead of {expected}. "
                 "Both accounts are now watched; sign in again for the other one.",
             )
@@ -248,6 +249,7 @@ class _App:
 def run() -> int:
     """Build the app, start the poller and block in the tray loop until quit."""
     logging_setup.setup_logging()
+    _migrate_legacy_state()
     settings = load_settings()
     store = AccountStore()
     _migrate_account_keys(store)
@@ -256,6 +258,34 @@ def run() -> int:
     application.start()
     application.wait()
     return 0
+
+
+def _migrate_legacy_state() -> None:
+    """One-time moves for the GSend rename (docs/DECISIONS.md D-23).
+
+    Copies settings.json and accounts.json from the pre-rename
+    %APPDATA%\\GmailNotifier folder when the new folder has none (the old
+    folder is never deleted — old logs stay there), and re-points a leftover
+    legacy autostart Run value at the current command. Runs before settings
+    are loaded; failures are logged by type and never block startup.
+    """
+    try:
+        new_dir = config.appdata_dir()
+        old_dir = new_dir.with_name(config.LEGACY_APP_NAME)
+        copied = False
+        for file_name in (config.SETTINGS_FILE_NAME, config.ACCOUNTS_FILE_NAME):
+            target = new_dir / file_name
+            source = old_dir / file_name
+            if target.exists() or not source.is_file():
+                continue
+            config.ensure_dir(new_dir)
+            shutil.copyfile(source, target)
+            copied = True
+        if copied:
+            logger.info("settings and accounts copied from the pre-rename folder")
+    except OSError as exc:
+        logger.warning("data folder migration skipped (%s)", type(exc).__name__)
+    autostart.migrate_legacy_value()
 
 
 def _migrate_account_keys(store: AccountStore) -> None:

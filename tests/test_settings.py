@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import json
 
-from gmail_notifier import settings as settings_mod
-from gmail_notifier.settings import DEFAULTS, Settings, load, save
+from gsend import settings as settings_mod
+from gsend.settings import DEFAULTS, Settings, load, save
 
 
 def test_missing_file_returns_defaults(tmp_path):

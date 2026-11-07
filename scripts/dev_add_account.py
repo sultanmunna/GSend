@@ -14,13 +14,13 @@ from __future__ import annotations
 
 import argparse
 
-from gmail_notifier.accounts import AccountStore
-from gmail_notifier.auth import add_account_interactive, remove_account
-from gmail_notifier.errors import AuthCancelled, ConfigError
+from gsend.accounts import AccountStore
+from gsend.auth import add_account_interactive, remove_account
+from gsend.errors import AuthCancelled, ConfigError
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Manage dev accounts for Gmail Tray Notifier.")
+    parser = argparse.ArgumentParser(description="Manage dev accounts for GSend.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("add", help="open the browser and add an account")
     subparsers.add_parser("list", help="list stored account emails")

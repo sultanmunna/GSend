@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from gmail_notifier import formatting
-from gmail_notifier.formatting import (
+from gsend import formatting
+from gsend.formatting import (
     TooltipSnapshot,
     account_display,
     menu_line,
@@ -14,8 +14,8 @@ from gmail_notifier.formatting import (
     toast_content,
     tooltip,
 )
-from gmail_notifier.models import Mail
-from gmail_notifier.settings import Settings
+from gsend.models import Mail
+from gsend.settings import Settings
 
 # 5 minutes after make_mail's fixed received_at, so ages are deterministic
 NOW = datetime(2026, 1, 1, 12, 5, tzinfo=UTC)
@@ -142,15 +142,12 @@ def test_menu_line_truncates_oversized_account_column():
 
 
 def test_tooltip_empty_states():
-    assert (
-        tooltip(snapshot(accounts=0), Settings())
-        == "Gmail Notifier: no account. Right-click to add one."
-    )
+    assert tooltip(snapshot(accounts=0), Settings()) == "GSend: no account. Right-click to add one."
     assert (
         tooltip(snapshot(accounts=1, needs_sign_in=True), Settings())
-        == "Gmail Notifier: sign-in needed. Right-click to fix."
+        == "GSend: sign-in needed. Right-click to fix."
     )
-    assert tooltip(snapshot(accounts=1), Settings()) == "Gmail Notifier: no recent mail"
+    assert tooltip(snapshot(accounts=1), Settings()) == "GSend: no recent mail"
 
 
 def test_tooltip_two_lines_with_account():
