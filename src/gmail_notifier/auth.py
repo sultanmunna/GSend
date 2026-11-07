@@ -131,6 +131,22 @@ def _register_client_secret(cfg: dict) -> None:
         security_logging.register_secret(installed.get("client_secret"))
 
 
+def _validate_installed_config(installed: dict) -> None:
+    """Refuse client configs that point OAuth at non-Google hosts (SECURITY section 3).
+
+    client_config.json is a local file; if it is edited or swapped, its URIs
+    would otherwise lead the browser to a fake consent page or hand the refresh
+    token to an impostor token endpoint. Only the documented Google endpoints
+    are accepted.
+    """
+    auth_uri = str(installed.get("auth_uri", "https://accounts.google.com/o/oauth2/auth"))
+    token_uri = str(installed.get("token_uri", config.GOOGLE_TOKEN_URL))
+    if not auth_uri.startswith("https://accounts.google.com/"):
+        raise ConfigError("client config auth_uri is not a Google accounts URL")
+    if token_uri != config.GOOGLE_TOKEN_URL:
+        raise ConfigError("client config token_uri is not the Google token endpoint")
+
+
 def add_account_interactive(timeout_seconds: int = 180, client_config: dict | None = None) -> str:
     """Run the browser sign-in and store the refresh token; return the account email.
 
@@ -143,6 +159,7 @@ def add_account_interactive(timeout_seconds: int = 180, client_config: dict | No
     _ensure_secure_keyring()
     cfg = client_config if client_config is not None else load_client_config()
     _register_client_secret(cfg)
+    _validate_installed_config(cfg.get("installed") or {})
     flow = InstalledAppFlow.from_client_config(
         cfg,
         config.SCOPES,
@@ -183,10 +200,11 @@ def credentials_for(email: str, client_config: dict | None = None) -> Credential
         or "client_secret" not in installed
     ):
         raise ConfigError("client config is missing client_id/client_secret")
+    _validate_installed_config(installed)
     return Credentials(
         None,
         refresh_token=refresh_token,
-        token_uri=installed.get("token_uri", config.GOOGLE_TOKEN_URL),
+        token_uri=config.GOOGLE_TOKEN_URL,
         client_id=installed["client_id"],
         client_secret=installed["client_secret"],
         scopes=config.SCOPES,

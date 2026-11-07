@@ -386,3 +386,42 @@ def test_add_account_stores_token_under_normalized_email(fake_flow, fake_keyring
     email = auth.add_account_interactive(client_config=FAKE_CONFIG)
     assert email == "mixedcase@gmail.com"
     assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") is not None
+
+
+# --- OAuth endpoint validation (SECURITY section 3): only Google hosts --------
+
+
+def test_credentials_for_refuses_tampered_token_uri(fake_keyring):
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    tampered = {"installed": dict(FAKE_CONFIG["installed"], token_uri="https://evil.test/token")}
+    with pytest.raises(ConfigError):
+        auth.credentials_for("user@example.com", client_config=tampered)
+
+
+def test_credentials_for_uses_only_the_google_token_endpoint(fake_keyring):
+    """Even with a valid config, the credential is pinned to the Google endpoint."""
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    creds = auth.credentials_for("user@example.com", client_config=FAKE_CONFIG)
+    assert creds.token_uri == "https://oauth2.googleapis.com/token"
+
+
+def test_add_account_refuses_tampered_auth_uri(fake_flow, fake_keyring):
+    tampered = {
+        "installed": dict(FAKE_CONFIG["installed"], auth_uri="https://evil.test/consent")
+    }
+    with pytest.raises(ConfigError):
+        auth.add_account_interactive(client_config=tampered)
+
+
+def test_add_account_accepts_v2_auth_uri_variant(fake_flow, fake_keyring, monkeypatch):
+    monkeypatch.setattr(
+        auth, "_run_local_sign_in", lambda flow, timeout: FakeCredentials("refresh-token-abc")
+    )
+    cfg = {
+        "installed": dict(
+            FAKE_CONFIG["installed"],
+            auth_uri="https://accounts.google.com/o/oauth2/v2/auth",
+        )
+    }
+    email = auth.add_account_interactive(client_config=cfg)
+    assert email == "user@example.com"
