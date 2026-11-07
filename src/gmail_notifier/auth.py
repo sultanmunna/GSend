@@ -211,6 +211,39 @@ def credentials_for(email: str, client_config: dict | None = None) -> Credential
     )
 
 
+def migrate_key_case(email: str) -> str | None:
+    """Move a stored token from a mixed-case keyring key to the normalized one.
+
+    SEC-03 sign-ins store tokens under the lower-cased address; entries from
+    older versions may sit under the address exactly as Google reported it.
+    Credential Manager lookups are case-sensitive, so the poller (which uses
+    the address from accounts.json) would never find a token stored under a
+    different casing. On success the token lives under the normalized key
+    only, and the normalized address should replace the old one in
+    accounts.json. Returns the normalized address, or None when nothing was
+    migrated. Never logs the token or the address (SECURITY section 5).
+    """
+    normalized = email.strip().lower() if isinstance(email, str) else ""
+    if not normalized or normalized == email or not _EMAIL_SHAPE.match(normalized):
+        return None
+    try:
+        _ensure_secure_keyring()
+        old_token = keyring.get_password(config.KEYRING_SERVICE, email)
+        current = keyring.get_password(config.KEYRING_SERVICE, normalized)
+        if old_token is None and current is None:
+            return None  # nothing stored under either casing
+        if old_token is not None and current is None:
+            security_logging.register_secret(old_token)
+            keyring.set_password(config.KEYRING_SERVICE, normalized, old_token)
+        if old_token is not None:
+            keyring.delete_password(config.KEYRING_SERVICE, email)
+    except Exception as exc:
+        logger.warning("keyring case migration skipped (%s)", type(exc).__name__)
+        return None
+    logger.info("token is available under the normalized account key")
+    return normalized
+
+
 def remove_account(email: str) -> None:
     """Delete the stored token and best-effort revoke it; never raises.
 

@@ -462,3 +462,54 @@ def test_fetch_token_passes_a_timeout(fake_flow, monkeypatch):
     # oauthlib requires the https form of the redirect for parsing:
     assert kwargs["authorization_response"].startswith("https://localhost:57571/")
     assert "code=fake-code" in kwargs["authorization_response"]
+
+
+# --- keyring case migration (SEC-03 follow-up) --------------------------------
+
+
+def test_migrate_key_case_moves_token_to_normalized_key(fake_keyring):
+    fake_keyring.set_password("GmailNotifier", "MixedCase@Gmail.COM", "stored-token")
+    result = auth.migrate_key_case("MixedCase@Gmail.COM")
+    assert result == "mixedcase@gmail.com"
+    assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") == "stored-token"
+    assert fake_keyring.get_password("GmailNotifier", "MixedCase@Gmail.COM") is None
+
+
+def test_migrate_key_case_does_not_overwrite_normalized_entry(fake_keyring):
+    fake_keyring.set_password("GmailNotifier", "MixedCase@Gmail.COM", "old-token")
+    fake_keyring.set_password("GmailNotifier", "mixedcase@gmail.com", "new-token")
+    result = auth.migrate_key_case("MixedCase@Gmail.COM")
+    assert result == "mixedcase@gmail.com"
+    assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") == "new-token"
+    assert fake_keyring.get_password("GmailNotifier", "MixedCase@Gmail.COM") is None
+
+
+def test_migrate_key_case_reports_normalized_key_without_token_copy(fake_keyring):
+    """Keyring already normalized but accounts.json holds the mixed-case row."""
+    fake_keyring.set_password("GmailNotifier", "mixedcase@gmail.com", "stored-token")
+    result = auth.migrate_key_case("MixedCase@Gmail.COM")
+    assert result == "mixedcase@gmail.com"
+    assert len(fake_keyring.entries) == 1
+
+
+def test_migrate_key_case_noop_cases(fake_keyring):
+    # already normalized: nothing to do
+    assert auth.migrate_key_case("mixedcase@gmail.com") is None
+    # no token under either casing
+    assert auth.migrate_key_case("MixedCase@Gmail.COM") is None
+    # unusable address shapes are refused
+    assert auth.migrate_key_case("not-an-address") is None
+    assert auth.migrate_key_case(None) is None  # type: ignore[arg-type]
+    assert not fake_keyring.entries
+
+
+def test_migrate_key_case_fails_closed_on_keyring_error(fake_keyring, monkeypatch):
+    fake_keyring.set_password("GmailNotifier", "MixedCase@Gmail.COM", "stored-token")
+
+    class PlainFileBackend:
+        """Not Credential Manager: the guard must refuse to touch tokens."""
+
+    monkeypatch.setattr(fake_keyring, "get_keyring", lambda: PlainFileBackend())
+    assert auth.migrate_key_case("MixedCase@Gmail.COM") is None
+    # nothing was copied anywhere
+    assert len(fake_keyring.entries) == 1

@@ -249,8 +249,29 @@ def run() -> int:
     """Build the app, start the poller and block in the tray loop until quit."""
     logging_setup.setup_logging()
     settings = load_settings()
+    store = AccountStore()
+    _migrate_account_keys(store)
     state = AppState()
-    application = _App(settings, AccountStore(), state)
+    application = _App(settings, store, state)
     application.start()
     application.wait()
     return 0
+
+
+def _migrate_account_keys(store: AccountStore) -> None:
+    """Normalize legacy mixed-case account keys at startup (SECURITY_REPORT SEC-03).
+
+    Sign-ins since SEC-03 store tokens under the lower-cased address, but older
+    entries may sit under the address exactly as Google reported it, and
+    accounts.json may hold that mixed-case row. Per account: copy the token to
+    the normalized keyring key when needed, delete the stale entry, and rename
+    the accounts.json row — otherwise the poller looks the token up under the
+    wrong casing and the account shows a permanent reauth state. Failures are
+    logged by type and never block startup; no token or address is logged.
+    """
+    for account in store.list():
+        normalized = auth.migrate_key_case(account.email)
+        if normalized is not None and normalized != account.email:
+            store.remove(account.email)
+            store.add(normalized, account.label)
+            logger.info("account key normalized at startup")

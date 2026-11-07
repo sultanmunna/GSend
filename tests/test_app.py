@@ -373,3 +373,30 @@ def test_tray_menu_escapes_ampersands_from_mail_and_accounts():
     open_gmail_index = texts.index("Open Gmail")
     open_texts = [item.text for item in items[open_gmail_index].submenu]
     assert "R&&D" in open_texts
+
+
+# --- startup keyring case migration (SEC-03 follow-up) -------------------------
+
+
+def test_startup_migration_renames_account_row_and_keyring(tmp_path, fake_keyring):
+    """Mixed-case legacy rows end up lower-cased in accounts.json and keyring."""
+    store = AccountStore(tmp_path / "accounts.json")
+    store.add("MixedCase@Gmail.COM", label="Work")
+    fake_keyring.set_password("GmailNotifier", "MixedCase@Gmail.COM", "stored-token")
+    app_module._migrate_account_keys(store)
+    accounts = store.list()
+    assert len(accounts) == 1
+    assert accounts[0].email == "mixedcase@gmail.com"
+    assert accounts[0].label == "Work"
+    assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") == "stored-token"
+    assert fake_keyring.get_password("GmailNotifier", "MixedCase@Gmail.COM") is None
+
+
+def test_startup_migration_leaves_normalized_accounts_alone(tmp_path, fake_keyring):
+    store = AccountStore(tmp_path / "accounts.json")
+    store.add("user@example.com")
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+    before = dict(fake_keyring.entries)
+    app_module._migrate_account_keys(store)
+    assert [a.email for a in store.list()] == ["user@example.com"]
+    assert fake_keyring.entries == before
