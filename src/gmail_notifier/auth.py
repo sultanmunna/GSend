@@ -341,7 +341,7 @@ def _profile_email(credentials: Credentials) -> str:
 def _revoke_token(token: str) -> None:
     """POST the token to Google's revoke endpoint; log failures by type only."""
     data = urlencode({"token": token}).encode("ascii")
-    request = Request(
+    request = Request(  # noqa: S310 - fixed Google revoke URL, scheme-checked below
         config.GOOGLE_REVOKE_URL,
         data=data,
         method="POST",
@@ -353,7 +353,7 @@ def _revoke_token(token: str) -> None:
         logger.warning("token revocation skipped (unexpected URL scheme)")
         return
     try:
-        with urlopen(request, timeout=_REVOKE_TIMEOUT_SECONDS) as response:  # nosec B310
+        with urlopen(request, timeout=_REVOKE_TIMEOUT_SECONDS) as response:  # nosec B310  # noqa: S310
             response.read()
     except Exception as exc:
         logger.warning("token revocation failed (%s); ignoring", type(exc).__name__)

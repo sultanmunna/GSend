@@ -89,3 +89,12 @@ def test_save_is_atomic_and_creates_missing_dirs(tmp_path):
     store.add("a@example.com")
     assert path.exists()
     assert list(tmp_path.rglob("*.tmp")) == []  # no temp file left behind
+
+
+def test_oversized_accounts_file_is_recovered(tmp_path):
+    """A planted multi-MB file must not be read into memory (SECURITY 6)."""
+    path = tmp_path / "accounts.json"
+    path.write_text("y" * (1024 * 1024 + 1), encoding="utf-8")
+    store = AccountStore(path)
+    assert store.list() == []
+    assert (tmp_path / "accounts.json.bad").exists()

@@ -18,6 +18,10 @@ from gmail_notifier import config
 
 logger = logging.getLogger(__name__)
 
+# accounts.json holds one small entry per account; anything larger is not ours.
+# Read caps keep a planted multi-gigabyte file from spiking memory (SECURITY 6).
+_MAX_JSON_BYTES = 1024 * 1024
+
 
 @dataclass(frozen=True)
 class StoredAccount:
@@ -61,6 +65,8 @@ class AccountStore:
 
     def _load(self) -> list[StoredAccount]:
         try:
+            if self._path.stat().st_size > _MAX_JSON_BYTES:
+                return self._recover_corrupt()
             raw = self._path.read_text(encoding="utf-8")
         except FileNotFoundError:
             return []

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 
+from gmail_notifier import settings as settings_mod
 from gmail_notifier.settings import DEFAULTS, Settings, load, save
 
 
@@ -88,3 +89,13 @@ def test_save_is_atomic_and_creates_missing_dirs(tmp_path):
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["poll_interval_seconds"] == 45
     assert list(tmp_path.rglob("*.tmp")) == []  # no temp file left behind
+
+
+def test_oversized_settings_file_is_recovered(tmp_path):
+    """A planted multi-MB file must not be read into memory (SECURITY 6)."""
+    path = tmp_path / "settings.json"
+    path.write_text("x" * (1024 * 1024 + 1), encoding="utf-8")
+    settings = settings_mod.load(path)
+    assert settings == settings_mod.DEFAULTS
+    assert path.read_text(encoding="utf-8") != "x" * (1024 * 1024 + 1)  # defaults written
+    assert (tmp_path / "settings.json.bad").exists()

@@ -25,6 +25,9 @@ POLL_INTERVAL_MAX = 600
 MAX_TOASTS_MIN = 1
 MAX_TOASTS_MAX = 10
 SHOW_ACCOUNT_MODES = ("auto", "always", "never")
+# A settings file is a few hundred bytes; anything larger is not ours. Read
+# caps keep a planted multi-gigabyte file from spiking memory (SECURITY 6).
+_MAX_JSON_BYTES = 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -48,6 +51,8 @@ def load(path: Path | None = None) -> Settings:
     """Load settings from `path` (default: %APPDATA%/GmailNotifier/settings.json)."""
     path = path if path is not None else config.settings_path()
     try:
+        if path.stat().st_size > _MAX_JSON_BYTES:
+            return _recover_corrupt(path)
         raw = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return DEFAULTS
