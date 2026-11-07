@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import sys
 import time
 import webbrowser
@@ -53,6 +54,7 @@ logger = logging.getLogger(__name__)
 _CLIENT_CONFIG_FILE_NAME = "client_config.json"
 _REVOKE_TIMEOUT_SECONDS = 10
 _SUCCESS_MESSAGE = "Signed in. You can close this tab."
+_EMAIL_SHAPE = re.compile(r"^[^@\s]+@[^@\s]+$")
 
 
 def load_client_config() -> dict:
@@ -279,6 +281,20 @@ def _run_local_sign_in(flow: InstalledAppFlow, timeout_seconds: int) -> Credenti
         server.server_close()
 
 
+def _normalize_profile_email(raw: object) -> str:
+    """Validate and normalize the address Google reports (SECURITY section 4).
+
+    The email is the keyring key and the accounts.json identity, and Credential
+    Manager lookups are case-sensitive: Gmail may report the address with
+    different casing than a previous sign-in, so everything is lower-cased here.
+    Anything without an address shape is refused instead of stored.
+    """
+    email = raw.strip().lower() if isinstance(raw, str) else ""
+    if not _EMAIL_SHAPE.match(email):
+        raise GmailError("Google reported an unusable account email address")
+    return email
+
+
 def _profile_email(credentials: Credentials) -> str:
     """Build a throwaway Gmail service, read the profile email, discard the service."""
     import httplib2
@@ -295,10 +311,7 @@ def _profile_email(credentials: Credentials) -> str:
         )
     finally:
         service.close()
-    email = profile.get("emailAddress")
-    if not email:
-        raise GmailError("Google did not report the account email address")
-    return email
+    return _normalize_profile_email(profile.get("emailAddress"))
 
 
 def _revoke_token(token: str) -> None:

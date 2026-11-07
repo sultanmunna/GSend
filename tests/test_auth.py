@@ -360,3 +360,29 @@ def test_load_client_config_wrong_shape_raises(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # keep the real ./client_config.json out of reach
     with pytest.raises(ConfigError):
         auth.load_client_config()
+
+
+def test_normalize_profile_email_lowercases_and_strips():
+    assert auth._normalize_profile_email("  User@Example.COM \n") == "user@example.com"
+
+
+def test_normalize_profile_email_refuses_unusable_values():
+    for bad in (None, 7, "", "not-an-address", "a b@c.test", "a@b c", "@x.test", "a@"):
+        with pytest.raises(GmailError):
+            auth._normalize_profile_email(bad)
+
+
+def test_add_account_stores_token_under_normalized_email(fake_flow, fake_keyring, monkeypatch):
+    """Gmail may report different casing between sign-ins; the keyring key is
+    case-sensitive, so the stored email must be normalized (SECURITY section 4)."""
+    monkeypatch.setattr(
+        auth, "_run_local_sign_in", lambda flow, timeout: FakeCredentials("refresh-token-abc")
+    )
+    monkeypatch.setattr(
+        auth,
+        "_profile_email",
+        lambda credentials: auth._normalize_profile_email("  MixedCase@Gmail.COM "),
+    )
+    email = auth.add_account_interactive(client_config=FAKE_CONFIG)
+    assert email == "mixedcase@gmail.com"
+    assert fake_keyring.get_password("GmailNotifier", "mixedcase@gmail.com") is not None
