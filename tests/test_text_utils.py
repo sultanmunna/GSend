@@ -148,3 +148,26 @@ def test_truncate_never_exceeds_limit():
     text = "সীমা পরীক্ষা word boundaries matter here 12345 ??????????"
     for limit in range(0, 60):
         assert len(text_utils.truncate(text, limit)) <= limit
+
+
+# --- Bidi control stripping (SECURITY section 6): no direction spoofing -------
+
+
+def test_decode_header_value_strips_bidi_overrides_and_isolates():
+    raw = "PayPa\u202el Support\u2066 hidden \u2069 \u200e\u200f"
+    assert "\u202e" not in text_utils.decode_header_value(raw)
+    assert "\u2066" not in text_utils.decode_header_value(raw)
+    assert "\u2069" not in text_utils.decode_header_value(raw)
+    assert "\u200e" not in text_utils.decode_header_value(raw)
+    assert text_utils.decode_header_value(raw) == "PayPal Support hidden"
+
+
+def test_clean_snippet_strips_bidi_controls():
+    text = "click \u202dhere\u202c now"
+    assert text_utils.clean_snippet(text) == "click here now"
+
+
+def test_parse_sender_strips_bidi_in_display_name():
+    name, address = text_utils.parse_sender("\u202eevil\u202c <x@evil.test>")
+    assert name == "evil"
+    assert address == "x@evil.test"

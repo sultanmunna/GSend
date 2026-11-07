@@ -50,6 +50,7 @@ HOSTILE_CORPUS = [
     "{0}",
     "{{x}}",
     "zero\u200bwidth",
+    "\u202e reversed \u202d forced \u2066isolate\u2069",
 ]
 
 
@@ -128,7 +129,7 @@ def test_end_to_end_hostile_mail_cannot_inject(monkeypatch):
         "payload": {
             "headers": [
                 {"name": "From", "value": '"$(calc)" <attacker@evil.test>'},
-                {"name": "Subject", "value": "Re: \"]]>\"><script>\"@ `calc`"},
+                {"name": "Subject", "value": "Re: \"]]>\"><script>\"@ `calc` \u202espoof"},
             ]
         },
     }
@@ -140,6 +141,8 @@ def test_end_to_end_hostile_mail_cannot_inject(monkeypatch):
     # CDATA splice from the subject's ]]> is present; no raw toast-action XML:
     assert "]]]]><![CDATA[>" in SCRIPTS[0]
     assert '<action arguments="https://evil.test"/>' not in SCRIPTS[0]
+    # Directional overrides are stripped before display (D-20):
+    assert "\u202e" not in SCRIPTS[0]
 
 
 def test_escape_winotify_is_total():

@@ -13,6 +13,10 @@ from email.utils import parseaddr
 
 # Invisible padding characters removed from snippets (docs/PRODUCT.md section 6.5).
 _INVISIBLE_CHARS = re.compile("[\u200b\u200c\u200d\u034f\u00ad\ufeff]")
+# Directional formatting characters (bidi overrides U+202A-U+202E, isolates
+# U+2066-U+2069, LRM/RLM): they reorder visible text, so a sender or subject
+# could display a spoofed reading direction. Stripped on decode/clean.
+_BIDI_CONTROLS = re.compile("[\u202a-\u202e\u2066-\u2069\u200e\u200f]")
 _WHITESPACE = re.compile(r"\s+")
 
 
@@ -40,7 +44,7 @@ def decode_header_value(raw: str | None) -> str:
                 parts.append(data.decode("utf-8", errors="replace"))
         else:
             parts.append(data)
-    return _collapse_whitespace("".join(parts))
+    return _collapse_whitespace(_BIDI_CONTROLS.sub("", "".join(parts)))
 
 
 def parse_sender(raw: str | None) -> tuple[str, str]:
@@ -67,11 +71,13 @@ def _strip_surrounding_quotes(text: str) -> str:
 
 
 def clean_snippet(raw: str | None) -> str:
-    """Clean a Gmail snippet: HTML-unescape, drop invisible padding, collapse whitespace."""
+    """Clean a Gmail snippet: HTML-unescape, drop invisible padding and bidi
+    controls, collapse whitespace."""
     if not raw:
         return ""
     text = html.unescape(raw)
     text = _INVISIBLE_CHARS.sub("", text)
+    text = _BIDI_CONTROLS.sub("", text)
     return _collapse_whitespace(text)
 
 
