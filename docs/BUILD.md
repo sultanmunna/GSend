@@ -24,8 +24,81 @@ keyring/pystray Windows backends, version resource). Output:
 dist\GmailNotifier\GmailNotifier.exe
 ```
 
+Verified contents of `dist\GmailNotifier\` (M7 re-verification, 2026-11-07):
+
+- `GmailNotifier.exe` — PE32+, **subsystem 2 (WINDOWS_GUI)**, so no console
+  window; icon and version resource embedded from `assets\`.
+- `_internal\client_config.json` — the real OAuth client, bundled at build time.
+- `_internal\googleapiclient\discovery_cache\documents\gmail.v1.json` — the
+  bundled discovery document that `static_discovery=True` (D-19) reads; no
+  extra PyInstaller hook needed.
+
 Pin updates: refresh `requirements-build.txt` from the dev venv (`pip freeze`)
-and record dependency changes in `docs/DECISIONS.md` (hard rule 9).
+and record dependency changes in `docs/DECISIONS.md` (hard rule 9). winotify is
+pinned exactly (`==`) and guarded by `tests/test_winotify_tripwire.py` — see
+the tripwire's re-audit message before accepting a bump.
+
+## Self-check
+
+```powershell
+.\dist\GmailNotifier\GmailNotifier.exe --self-check
+```
+
+Runs offline checks only (no network, sign-in, tray or mutex) and prints one
+`PASS`/`FAIL` line per check plus an overall line; exit code 0 or 1:
+
+app version · settings load · accounts load · client config valid (Google
+endpoints) · keyring is Windows Credential Manager · gmail service builds from
+bundled discovery · winotify imports · pystray imports · tray icon images
+generate.
+
+The windowed exe has no console, so the self-check attaches to the parent
+terminal (or allocates one) and also records the same lines (names only, no
+values) to `%LOCALAPPDATA%\GmailNotifier\logs\self_check.log`. **The scan
+build (below) intentionally FAILs the "client config valid" line** — its fake
+client is unusable by design.
+
+## Release packaging
+
+```powershell
+.\scripts\package_release.ps1             # real build -> dist\GmailNotifier-<version>.zip + SHA256SUMS.txt
+.\scripts\package_release.ps1 -ScanBuild  # scan build  -> dist\GmailNotifier-<version>-scan.zip + SHA256SUMS-scan.txt
+```
+
+## Antivirus scanning: scan build ONLY
+
+The real build bundles the real `client_config.json`. Sharing it with users is
+fine, but it must **never** be uploaded to VirusTotal or any other scanning
+service — files uploaded there are shared with security vendors. For scanning,
+build the scan build first, which bundles `client_config.example.json` (fake
+client, no secret) instead:
+
+```powershell
+.\scripts\build_exe.ps1 -ScanBuild
+.\scripts\package_release.ps1 -ScanBuild
+```
+
+The scan build is for scanning only; its sign-in cannot work (fake client) and
+it must not be distributed for daily use.
+
+## Measurements
+
+Measured on the dev machine (Windows 11, build 22621, Python 3.13), 2026-11-07,
+with `scripts/measure_idle.py` (psutil, DECISIONS D-22), app idling with one
+real account, poll interval 45 s:
+
+| Metric | Value | Target |
+|---|---|---|
+| Startup (to the "starting" log line) | 0.8 s | < 3 s |
+| Idle RSS after 10 minutes | 72.8 MB (flat from ~1 min: 63 → 72.6 → 72.8 MB) | <= 80 MB |
+| Idle CPU (average over 10 min) | 0.08% (~0% between polls) | ~0% |
+| `dist\GmailNotifier` folder size | 152.7 MB | informational |
+
+Re-measure on every release. The 24-hour soak (T-22) uses
+`scripts/soak_monitor.py`: start the exe, run
+`python scripts/soak_monitor.py --pid <pid>`; it appends one CSV line per
+minute (timestamp, pid, RSS MB, CPU %, threads, handles — numbers only) to
+`%LOCALAPPDATA%\GmailNotifier\logs\soak_metrics.csv`.
 
 ## Optional installer
 
@@ -40,18 +113,23 @@ admin rights) into `%LOCALAPPDATA%\Programs\GmailNotifier`.
 
 | Check | How | Target |
 |---|---|---|
+| `--self-check` | run the exe with the flag (above) | all PASS, exit 0 |
 | Runs without Python | copy `dist\GmailNotifier\` to a clean Windows 10/11 machine, start the exe | sign-in + toast work |
-| Startup | launch the exe, time to tray icon visible | < 3 s |
-| Idle RAM | Task Manager → Details → GmailNotifier.exe after 10 min idle | <= 80 MB |
-| Folder size | `Get-ChildItem dist\GmailNotifier -Recurse \| Measure-Object Length -Sum` | informational |
+| Startup | `scripts/measure_idle.py` (to "starting" log line), then confirm the tray icon is visible | < 3 s |
+| Idle RAM / CPU | `scripts/measure_idle.py --exe dist\GmailNotifier\GmailNotifier.exe --minutes 10` | <= 80 MB, ~0% |
+| 24-hour soak | `scripts/soak_monitor.py` against the running exe | RSS flat over 24 h |
+| Folder size | `measure_idle.py --dist dist\GmailNotifier` | informational |
 | Single instance | start the exe twice | second exits silently |
-| Antivirus | upload the exe/folder to VirusTotal before sharing | no flags (unsigned: SmartScreen warning is expected) |
+| Antivirus | upload the **scan build zip only** (see above) | no flags (unsigned: SmartScreen warning is expected) |
 | Logs | `%LOCALAPPDATA%\GmailNotifier\logs\app.log` contains no mail content | privacy test in docs/TESTING.md §4 |
 
-Measurements from the M7 build on the dev machine (Windows 11, Python 3.13):
-startup 2.2 s (to running state; tray icon directly after), idle RAM 62 MB
-working set / 49 MB private after ~1 min, folder 153 MB, second instance
-exited silently. Re-measure on every release (ROADMAP M8 soak test).
+Verification run 2026-11-07 (dev machine): frozen `--self-check` all PASS
+(recorded in `self_check.log`); 60-second live run — process alive, no console
+window (GUI subsystem), one INFO startup line, zero ERROR/WARNING lines, zero
+token/secret/code URL patterns in the new log text; clean terminate; no process
+remained. No SmartScreen/antivirus prompt was observed launching from
+PowerShell on the dev machine (expected: unsigned exe shows SmartScreen on the
+first Explorer launch — needs human confirmation).
 
 ## Known expectations
 
