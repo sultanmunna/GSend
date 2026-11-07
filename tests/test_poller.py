@@ -465,3 +465,23 @@ def test_rebaseline_rearms_silently(tmp_path):
     )
     h.poller._poll_cycle()
     assert [m.id for m in h.new_events[0][1]] == ["m3"]  # later arrivals still toast
+
+
+# --- hostile listings (SECURITY section 6): bound everything a bad API returns
+
+
+def test_hostile_10k_id_listing_stays_bounded(tmp_path):
+    """A listing with 10,000 ids must not blow the cache, seen set or state."""
+    h = build_poller(tmp_path)
+    source = h.sources[ACCOUNT]
+    source.ids = [f"m{i}" for i in range(10_000)]
+    received = datetime(2026, 1, 1, 12, tzinfo=UTC)
+    source.mails = {f"m{i}": make_mail(f"m{i}", received=received) for i in range(10_000)}
+    h.poller._poll_cycle()  # baseline
+    poll = h.poller._poll_state[ACCOUNT]
+    assert len(poll.seen_ids) <= _SEEN_LIMIT
+    assert len(poll.cache) <= 10
+    assert len(h.state.latest(3)) <= 3
+    # and a later cycle with the same listing stays silent and stable
+    h.poller._poll_cycle()
+    assert h.new_events == []

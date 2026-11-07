@@ -23,6 +23,11 @@
 | `poller` | baseline is silent; new unread mail emits once; read mail does not toast; old mail re-entering top 10 does not toast; clock skew (use `received_at` only); burst cap; backoff growth and reset; reauth pauses account; removal mid-loop; `stop()` is prompt; `wake()` triggers a poll |
 | `state` | merged latest 3 across accounts sorted by `received_at`; unread/status queries; subscriptions fire |
 | `formatting` | tooltip never exceeds 127 chars (property-style loop over long inputs); truncation order; account shown only per `show_account` rule; `show_preview` off; empty and no-account states; summary toast text |
+| **privacy canary** (`test_privacy_canary.py`) | canary-marked fake mails through the full pipeline (parse → poller → notifier → tray) with forced transient/malformed/unexpected/reauth errors; scans log records, log files, settings/accounts files, the system temp dir and exception text — zero matches required; fake secrets never reach a persistent sink even from a deliberately bad logging call |
+| **toast injection** (`test_toast_injection.py`) | real `WinotifyBackend` with a fake process runner (monkeypatched `winotify._run_ps`) over the hostile corpus: `$(...)`, backticks, `"`, line-start `"@`, `]]>`, XML action injection; asserts the generated PowerShell script is inert and content appears only in escaped/spliced form |
+| **links tamper** (`test_links.py`) | `../`, `javascript:`, spaces, unicode, empty and non-hex ids raise `ValueError`; malformed emails rejected; notifier keeps the toast but drops the click target |
+| **memory soak** (`test_memory_soak.py`) | 50,000 poller cycles with a fake client; exactly one toast (mid-soak arrival); tracemalloc heap growth < 512 KiB |
+| **oversized JSON** (`test_settings.py`, `test_accounts.py`) | files larger than 1 MiB are backed up as `.bad` and replaced with defaults, never read fully into memory |
 
 ## 3. Manual QA checklist (Windows 10 and 11)
 

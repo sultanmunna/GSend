@@ -24,14 +24,15 @@ Privacy is the product's main promise: **your mail never leaves your PC except i
 
 ## 3. Network allowlist
 
-`accounts.google.com`, `oauth2.googleapis.com` (token and revoke), `gmail.googleapis.com`. Nothing else: no analytics, crash reporting, update checks, fonts or images.
+`accounts.google.com`, `oauth2.googleapis.com` (token and revoke), `gmail.googleapis.com`. Nothing else: no analytics, crash reporting, update checks, fonts or images. Gmail services are built with the **bundled** discovery document (`static_discovery=True`, D-19), so no discovery fetch contacts `www.googleapis.com`; `client_config.json` URIs are validated against these endpoints (D-18 of `auth.py` — see SECURITY_REPORT SEC-05) and the built credential is pinned to the Google token endpoint.
 
 ## 4. OAuth specifics
 
-- Installed-app flow with a **loopback redirect** on a random local port, bound to `localhost` only, open only while a sign-in is in progress (timeout 180 s).
+- Installed-app flow with a **loopback redirect** on a random local port, bound to `localhost` only, open only while a sign-in is in progress (timeout 180 s). The token exchange itself carries a socket timeout (SEC-06).
 - **Keyring backend guard** (D-17): `keyring` silently picks a backend; `auth.py` refuses to store or read tokens unless the active backend is Windows Credential Manager (or a chain containing it). No silent plaintext fallback.
 - PKCE and the `state` parameter must be used (the library does this; verify).
 - `prompt=select_account consent` so the chooser is shown and a refresh token is returned.
+- The profile email returned by `getProfile` is stripped, lower-cased and shape-checked before it becomes the keyring key or the `accounts.json` identity (SEC-03).
 - The app never sees the Google password.
 - On account removal: delete the stored token and revoke it (best effort).
 - An unverified app shows Google's warning screen. This is expected while the app is not verified.
@@ -52,9 +53,13 @@ Privacy is the product's main promise: **your mail never leaves your PC except i
 | Malware running as the same Windows user | Out of scope (it can also read the browser). DPAPI protects tokens at rest from other users. |
 | Hijack of the localhost redirect | Random port, short-lived listener, PKCE, `state` |
 | Token leakage through logs or crash output | Logging rules above; token only handled in `auth.py`; any leak is scrubbed by the redacting log formatter (D-17) |
+| **Mail content executes code via the toast** (winotify generates a PowerShell script; an expandable here-string would run `$(...)` from a subject, `]]>` would inject toast XML) | Every title/message/launch is PowerShell/CDATA-escaped at the `WinotifyBackend` boundary (`text_utils.escape_winotify`, D-18); regression-tested with a fake process runner over a hostile corpus |
+| **Hostile mail text breaks rendering** (bidi overrides spoof reading order, `&` corrupts Win32 menus) | Directional controls stripped on decode/clean (D-20); menu text has `&` doubled in `tray.py`; truncation limits enforced by `formatting.py` |
+| **Tampered mail IDs or account values become URLs** | `links.mail_url`/`inbox_url` raise `ValueError` unless the id is hex and the email has address shape; the toast keeps its text but loses the click target (SEC-02) |
 | Leaked client secret | Low impact (cannot access users' data alone); keep out of Git; rotate if leaked |
 | Revoked or stolen token | Detect `invalid_grant`, show "Sign in again"; user can revoke in their Google account |
-| Malicious dependency | Pinned versions, `pip-audit`, `bandit -r src`, minimal dependencies, build from a clean venv |
+| Malicious dependency | Pinned versions (`requirements-lock.txt`, `requirements-build.txt`), `pip-audit`, `bandit -r src`, minimal dependencies, build from a clean venv, weekly dependabot, CI with `permissions: contents: read` and SHA-pinned actions |
+| Planted huge local JSON file spikes memory on load | `settings.json`/`accounts.json` refuse files larger than 1 MiB and recover with defaults (SEC-10) |
 | Antivirus false positives on PyInstaller builds | `--onedir`, clean venv, optional code signing, VirusTotal check before release |
 
 ## 7. Agent checklist before finishing any task
