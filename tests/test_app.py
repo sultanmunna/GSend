@@ -336,3 +336,40 @@ def test_different_account_on_re_sign_in_becomes_new_account(tmp_path, monkeypat
     assert store.has("b@other.com")
     assert fake.welcomes == []  # not the first account
     assert any("b@other.com" in message and "a@x.com" in message for _t, message in fake.messages)
+
+
+def test_tray_menu_escapes_ampersands_from_mail_and_accounts():
+    """Win32 menus treat '&' as the accelerator marker: content must be doubled."""
+    from datetime import timedelta
+
+    state = AppState()
+    state.set_accounts(
+        [
+            Account("a@x.com", None, AccountStatus.OK),
+            Account("b@x.com", "R&D", AccountStatus.OK),
+        ]
+    )
+    hostile = Mail(
+        account="a@x.com",
+        id="16a7c1f2e3d4b5a6",
+        thread_id="16a7c1f2e3d4b5a6",
+        sender_name="Tom & Jerry",
+        sender_email="tom@evil.test",
+        subject="Q1 & Q2 savings",
+        snippet="Preview",
+        received_at=datetime.now(UTC) - timedelta(minutes=1),
+        unread=True,
+    )
+    state.update_mails("a@x.com", [hostile])
+    tray = Tray(state, Settings(show_account="always"), _callbacks())
+    items = list(tray._menu_items())
+    mail_line = items[0].text
+    assert "Tom && Jerry" in mail_line
+    assert "Q1 && Q2" in mail_line
+    texts = [getattr(item, "text", "") for item in items]
+    accounts_index = texts.index("Accounts")
+    account_texts = [item.text for item in items[accounts_index].submenu]
+    assert "a@x.com" in account_texts
+    open_gmail_index = texts.index("Open Gmail")
+    open_texts = [item.text for item in items[open_gmail_index].submenu]
+    assert "R&&D" in open_texts

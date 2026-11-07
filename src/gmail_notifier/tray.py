@@ -39,6 +39,17 @@ def _action_with(call: Callable[[Mail | str], None], value: Mail | str) -> Calla
     return lambda: call(value)
 
 
+def _menu_text(text: str) -> str:
+    """Escape Win32 accelerator prefixes before text reaches a menu item.
+
+    Windows menus treat a single ``&`` as the accelerator marker: it hides the
+    character and underlines the next one. Mail senders, subjects, account
+    emails and hand-edited labels are attacker- or user-controlled, so every
+    literal ``&`` is doubled (renders as one ``&``).
+    """
+    return text.replace("&", "&&")
+
+
 _ICON_SIZE = 32
 _ENVELOPE_FILL = (66, 133, 244, 255)
 _ENVELOPE_LINE = (43, 93, 173, 255)
@@ -154,8 +165,10 @@ class Tray:
         if mails:
             for index, mail in enumerate(mails):
                 yield pystray.MenuItem(
-                    formatting.menu_line(
-                        mail, self._settings, self._display_for(mail.account, accounts)
+                    _menu_text(
+                        formatting.menu_line(
+                            mail, self._settings, self._display_for(mail.account, accounts)
+                        )
                     ),
                     _action_with(callbacks.on_open_mail, mail),
                     default=index == 0,
@@ -223,7 +236,7 @@ class Tray:
             )
         items = [
             pystray.MenuItem(
-                a.label or a.email,
+                _menu_text(a.label or a.email),
                 _action_with(self._callbacks.on_open_inbox, a.email),
             )
             for a in accounts
@@ -234,7 +247,7 @@ class Tray:
     def _account_items(self, accounts: list[Account]) -> list[pystray.MenuItem]:
         items: list[pystray.MenuItem] = []
         for account in accounts:
-            text = account.email
+            text = _menu_text(account.email)
             if account.status is AccountStatus.NEEDS_REAUTH:
                 text += "  ⚠"
             subs: list[pystray.MenuItem] = []
