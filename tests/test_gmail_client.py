@@ -266,3 +266,48 @@ def test_error_messages_carry_no_mail_content():
     assert "Weekly report" not in message
     assert "রফিক" not in message
     assert "msg-bangla" not in message
+
+
+def test_service_build_uses_bundled_discovery(monkeypatch):
+    """The discovery document must come from the bundle, not www.googleapis.com
+    (D-19): every network contact stays on the documented allowlist hosts."""
+    captured: dict = {}
+
+    def fake_build(*args, **kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr("gmail_notifier.gmail_client.build", fake_build)
+    gmail_client._build_service(credentials=None)
+    assert captured.get("static_discovery") is True
+    assert captured.get("cache_discovery") is False
+
+
+def test_profile_service_build_uses_bundled_discovery(monkeypatch):
+    """Same rule for the throwaway profile service in auth.py (D-19)."""
+    captured: dict = {}
+
+    def fake_build(*_args, **kwargs):
+        captured.update(kwargs)
+
+        class FakeService:
+            def users(self):
+                return self
+
+            def getProfile(self, **_kw):
+                return self
+
+            def execute(self, **_kw):
+                return {"emailAddress": "user@example.com"}
+
+            def close(self):
+                pass
+
+        return FakeService()
+
+    monkeypatch.setattr("googleapiclient.discovery.build", fake_build)
+    from gmail_notifier import auth
+
+    email = auth._profile_email(credentials=None)
+    assert email == "user@example.com"
+    assert captured.get("static_discovery") is True

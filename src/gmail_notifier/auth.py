@@ -303,8 +303,9 @@ def _profile_email(credentials: Credentials) -> str:
 
     # google-auth 2.62+ removed Credentials.authorize; AuthorizedHttp from the
     # separate google-auth-httplib2 package is the supported wrapper (D-15).
+    # static_discovery keeps the discovery document local (D-19).
     http = AuthorizedHttp(credentials, httplib2.Http(timeout=config.HTTP_TIMEOUT_SECONDS))
-    service = build("gmail", "v1", http=http, cache_discovery=False)
+    service = build("gmail", "v1", http=http, cache_discovery=False, static_discovery=True)
     try:
         profile = (
             service.users().getProfile(userId="me", fields="emailAddress").execute(num_retries=2)

@@ -43,9 +43,12 @@ def _build_service(credentials: Any) -> Any:
 
     `google-auth` 2.62+ removed `Credentials.authorize`; the wrapper from the
     separate `google-auth-httplib2` package does the same job (DECISIONS D-15).
+    `static_discovery=True` uses the bundled discovery document instead of
+    fetching one from www.googleapis.com at startup, so every request goes to
+    the documented allowlist hosts only (DECISIONS D-19).
     """
     http = AuthorizedHttp(credentials, httplib2.Http(timeout=config.HTTP_TIMEOUT_SECONDS))
-    return build("gmail", "v1", http=http, cache_discovery=False)
+    return build("gmail", "v1", http=http, cache_discovery=False, static_discovery=True)
 
 
 def _map_google_errors(func):
