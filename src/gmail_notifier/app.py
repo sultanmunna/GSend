@@ -93,7 +93,7 @@ class _App:
             settings,
             TrayCallbacks(
                 on_open_mail=self._open_mail,
-                on_open_inbox=lambda email: webbrowser.open(links.inbox_url(email)),
+                on_open_inbox=self._open_inbox,
                 on_add_account=self._add_account,
                 on_remove_account=self._remove_account,
                 on_sign_in_again=self._sign_in_again,
@@ -140,8 +140,21 @@ class _App:
         self._notifier.notify_reauth_needed(email)
 
     def _open_mail(self, mail: Mail) -> None:
-        webbrowser.open(links.mail_url(mail.account, mail.thread_id))
+        try:
+            url = links.mail_url(mail.account, mail.thread_id)
+        except ValueError:
+            logger.warning("mail open skipped (unvalidated id or account value)")
+        else:
+            webbrowser.open(url)
         self._state.mark_opened(mail.id)
+
+    def _open_inbox(self, email: str) -> None:
+        try:
+            url = links.inbox_url(email)
+        except ValueError:
+            logger.warning("inbox open skipped (unvalidated account value)")
+            return
+        webbrowser.open(url)
 
     def _add_account(self) -> None:
         self._run_sign_in()

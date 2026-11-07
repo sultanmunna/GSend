@@ -10,6 +10,7 @@ and never raise (docs/ARCHITECTURE.md section 9).
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from gmail_notifier import config, formatting, links, text_utils
 from gmail_notifier.models import Mail
@@ -102,7 +103,7 @@ class Notifier:
         self._backend.show(
             content.title,
             "\n".join(content.lines),
-            links.mail_url(mail.account, mail.thread_id),
+            self._launch_url(lambda: links.mail_url(mail.account, mail.thread_id)),
             self._settings.notification_sound,
         )
 
@@ -111,9 +112,22 @@ class Notifier:
         self._backend.show(
             content.title,
             "\n".join(content.lines),
-            links.inbox_url(account_email),
+            self._launch_url(lambda: links.inbox_url(account_email)),
             self._settings.notification_sound,
         )
+
+    @staticmethod
+    def _launch_url(build: Callable[[], str]) -> str | None:
+        """The launch URL, or None when the parts do not validate (still toast).
+
+        A tampered message id or malformed account email must never become a
+        URL; the toast simply loses its click target instead (SECURITY section 6).
+        """
+        try:
+            return build()
+        except ValueError:
+            logger.warning("toast launch skipped (unvalidated URL parts)")
+            return None
 
     def _send_reauth_toast(self, account_email: str) -> None:
         display = self._display_for(account_email)
