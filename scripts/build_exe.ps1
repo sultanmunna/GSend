@@ -1,12 +1,16 @@
 # Builds dist/GmailNotifier with PyInstaller from a clean venv (DECISIONS D-12/D-13).
 # Run from the repo root in PowerShell:  .\scripts\build_exe.ps1
+# -ScanBuild bundles client_config.example.json (fake client) instead of the real
+# one; that output is for antivirus/scan services ONLY (docs/BUILD.md), not for use.
+param([switch]$ScanBuild)
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 
-# Hard rule 5: the real client config is bundled at build time, never committed.
-if (-not (Test-Path "client_config.json")) {
-    Write-Error "client_config.json is missing in the repo root. See docs/GOOGLE_CLOUD_SETUP.md."
+# Hard rule 5: the client config is bundled at build time, never committed.
+$ClientConfig = if ($ScanBuild) { "client_config.example.json" } else { "client_config.json" }
+if (-not (Test-Path $ClientConfig)) {
+    Write-Error "$ClientConfig is missing in the repo root. See docs/GOOGLE_CLOUD_SETUP.md."
     exit 1
 }
 
@@ -21,6 +25,7 @@ if ($LASTEXITCODE -ne 0) { Write-Error "pip install failed"; exit 1 }
 
 # Refresh the icon from the runtime drawing so exe and tray stay in sync.
 & .venv-build\Scripts\python.exe -I scripts\make_icons.py
+if ($LASTEXITCODE -ne 0) { Write-Error "make_icons failed"; exit 1 }
 
 & .venv-build\Scripts\python.exe -m PyInstaller `
     --noconfirm --clean `
@@ -28,7 +33,7 @@ if ($LASTEXITCODE -ne 0) { Write-Error "pip install failed"; exit 1 }
     --name GmailNotifier `
     --paths src `
     --icon assets\app.ico `
-    --add-data "client_config.json;." `
+    --add-data "$ClientConfig;." `
     --version-file assets\version_info.py `
     --hidden-import keyring.backends.Windows `
     --hidden-import pystray._win32 `
@@ -37,4 +42,8 @@ if ($LASTEXITCODE -ne 0) { Write-Error "PyInstaller failed"; exit 1 }
 
 Write-Host ""
 Write-Host "Build output: $Root\dist\GmailNotifier\GmailNotifier.exe"
+if ($ScanBuild) {
+    Write-Host "SCAN BUILD: bundled client_config.example.json (fake client)."
+    Write-Host "For antivirus/scan services ONLY - do not distribute for daily use."
+}
 Write-Host "Next: smoke-test on this machine, then on a clean machine (docs/BUILD.md)."
