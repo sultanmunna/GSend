@@ -93,3 +93,27 @@ def truncate(text: str, limit: int) -> str:
         cut = boundary
     head = text[:cut].rstrip()
     return f"{head}…" if head else "…"
+
+
+def escape_winotify(text: str) -> str:
+    """Neutralize `text` for embedding in a winotify 1.1 toast (DECISIONS D-18).
+
+    winotify builds the toast by str.format into a PowerShell script whose XML
+    template is an expandable here-string (@"..."@) with CDATA text fields.
+    Mail content is attacker-controlled, so it must not reach that script raw:
+
+    - ``$(...)``/``$env:...`` in an expandable here-string would be executed by
+      PowerShell -> escape ``$`` (and the escape char `` ` `` itself);
+    - a ``"`` would break out of the script's ``$Toast.Tag = "{tag}"`` string
+      and could start a line with the here-string terminator ``"@`` -> escape
+      it, which also makes a ``"@`` from content impossible;
+    - ``]]>`` would close a CDATA section early and allow toast XML (action)
+      injection -> splice the CDATA section, the standard lossless idiom.
+
+    The backtick escapes are exactly what PowerShell renders as the original
+    characters, so the toast displays the true content.
+    """
+    if not text:
+        return text
+    text = text.replace("`", "``").replace("$", "`$").replace('"', '`"')
+    return text.replace("]]>", "]]]]><![CDATA[>")

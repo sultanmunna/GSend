@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from gmail_notifier import config, formatting, links
+from gmail_notifier import config, formatting, links, text_utils
 from gmail_notifier.models import Mail
 from gmail_notifier.settings import Settings
 from gmail_notifier.state import AppState
@@ -34,11 +34,14 @@ class WinotifyBackend(ToastBackend):
     def show(self, title: str, message: str, launch: str | None, sound: bool) -> None:
         from winotify import Notification, audio
 
+        # winotify embeds these strings into a generated PowerShell script
+        # (expandable here-string + CDATA); they must be escaped at our
+        # boundary so mail content can never inject XML or commands (D-18).
         notification = Notification(
             app_id=_APP_ID,
-            title=title,
-            msg=message,
-            launch=launch or "",
+            title=text_utils.escape_winotify(title),
+            msg=text_utils.escape_winotify(message),
+            launch=text_utils.escape_winotify(launch) if launch else "",
         )
         # set_audio(sound, loop): loop is a required positional in winotify 1.1.
         notification.set_audio(audio.Default if sound else audio.Silent, loop=False)
