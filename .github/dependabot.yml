@@ -1,0 +1,11 @@
+# Weekly dependency and action updates (docs/ROADMAP.md M8, SECURITY section 6).
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
