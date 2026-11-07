@@ -1,6 +1,6 @@
 # QA_RESULTS.md — Gmail Tray Notifier manual QA session
 
-- Commit: `(recorded after the scaffold commit; see the header note below)`
+- Commit: `f6d2826` (QA session start)
 - App version: 0.1.0
 - Windows: build 10.0.22621 — **tester to confirm/correct** (expected Windows 11)
 - Date: 2026-11-07
