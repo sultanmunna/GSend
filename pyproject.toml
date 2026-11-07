@@ -28,6 +28,9 @@ dev = [
     "pyinstaller>=6.0",
     "pip-audit>=2.7",
     "bandit>=1.7",
+    # Dev-only measurement tooling (scripts/measure_idle.py, scripts/soak_monitor.py);
+    # never imported by the app, never bundled into the exe (DECISIONS D-22).
+    "psutil>=5.9",
 ]
 
 [project.scripts]

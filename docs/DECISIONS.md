@@ -106,3 +106,8 @@ Architecture decision log. Add a new entry (next number) for any change to a dec
 - **Decision:** `auth._validate_installed_config` accepts `client_config.json` only when `auth_uri` is under `https://accounts.google.com/` and `token_uri` is exactly `https://oauth2.googleapis.com/token`; `credentials_for` builds the credential with `config.GOOGLE_TOKEN_URL` regardless of the file's `token_uri` (SECURITY_REPORT SEC-05).
 - **Why:** `client_config.json` is a local, user-editable file that used to be trusted blindly: a swapped config could route the consent page or the token exchange (and with it the refresh token) to a non-Google host. Failing loudly (`ConfigError`) beats silently trusting the file.
 - **Consequences:** A config with a non-canonical but Google-owned token URI (none are known) would be refused; the browser flow still uses the file's `auth_uri` after the prefix check.
+
+## D-22 `psutil` joins the dev tooling for measurement scripts
+- **Decision:** `psutil>=5.9` is added to the `[dev]` extra only. `scripts/measure_idle.py` (startup time, idle RSS/CPU for docs/BUILD.md) and `scripts/soak_monitor.py` (T-22 24-hour soak CSV) use it; the app itself never imports it and the built exe does not bundle it.
+- **Why:** M7 acceptance requires measured idle RSS/CPU and the T-22 soak needs per-minute RSS/CPU/thread/handle samples; Win32 process APIs via ctypes would duplicate what `psutil` provides reliably.
+- **Consequences:** Build venv (`requirements-build.txt`) unchanged; dev venv/lock gains psutil. Scripts print timestamps and numbers only — no log text, addresses or mail content.
