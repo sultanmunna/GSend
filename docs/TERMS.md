@@ -32,4 +32,4 @@ These terms may be updated from time to time; the "last updated" date above show
 
 ## 8. Contact
 
-Questions: **[YOUR-EMAIL]@gmail.com**
+Questions: **munna.syc@gmail.com**

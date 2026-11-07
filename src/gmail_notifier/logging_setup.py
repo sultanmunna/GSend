@@ -12,7 +12,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from gmail_notifier import config
+from gmail_notifier import config, security_logging
 
 _LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 _LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -44,7 +44,9 @@ def setup_logging(
     _added_handlers.clear()
     _silence_google_loggers()
 
-    formatter = logging.Formatter(_LOG_FORMAT, _LOG_DATE_FORMAT)
+    # Every handler formats through the redacting formatter so a registered
+    # secret cannot reach the log even from a future call-site mistake (D-17).
+    formatter = security_logging.RedactingFormatter(_LOG_FORMAT, _LOG_DATE_FORMAT)
 
     if console is None:
         console = not getattr(sys, "frozen", False)

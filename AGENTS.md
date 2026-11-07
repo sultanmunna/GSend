@@ -22,7 +22,7 @@ The user signs in with Google once (browser OAuth), can add several Gmail accoun
 - Secrets: `keyring` (Windows Credential Manager)
 - Toasts: `winotify` (fallback: `windows-toasts`, see DECISIONS D-11)
 - Packaging: PyInstaller (`--onedir`, windowed)
-- Dev: `pytest`, `ruff`, `pip-audit`
+- Dev: `pytest`, `ruff`, `pip-audit`, `bandit`
 
 ## Hard rules (never break these)
 
@@ -60,6 +60,7 @@ python -m gmail_notifier        # run the app
 pytest                          # tests
 ruff check . ; ruff format .    # lint + format
 pip-audit                       # dependency audit
+bandit -r src -ll               # static security scan (no medium/high findings)
 .\scripts\build_exe.ps1         # build the exe (milestone M7)
 ```
 

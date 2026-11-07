@@ -17,8 +17,14 @@ from urllib.parse import urlparse
 
 import pytest
 
-from gmail_notifier import auth
-from gmail_notifier.errors import AuthCancelled, ConfigError, GmailError, ReauthRequired
+from gmail_notifier import auth, security_logging
+from gmail_notifier.errors import (
+    AuthCancelled,
+    ConfigError,
+    GmailError,
+    KeyringBackendError,
+    ReauthRequired,
+)
 
 FAKE_CONFIG = {
     "installed": {
@@ -218,6 +224,53 @@ def test_credentials_for_malformed_config_raises_config_error(fake_keyring):
     fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
     with pytest.raises(ConfigError):
         auth.credentials_for("user@example.com", client_config={"installed": {}})
+
+
+def test_add_account_refuses_insecure_keyring_backend(fake_keyring, monkeypatch):
+    class PlainFileBackend:
+        """A keyring backend that is not Windows Credential Manager."""
+
+    monkeypatch.setattr(fake_keyring, "get_keyring", lambda: PlainFileBackend())
+    with pytest.raises(KeyringBackendError):
+        auth.add_account_interactive(client_config=FAKE_CONFIG)
+
+
+def test_credentials_for_refuses_insecure_keyring_backend(fake_keyring, monkeypatch):
+    fake_keyring.set_password("GmailNotifier", "user@example.com", "stored-token")
+
+    class PlainFileBackend:
+        """A keyring backend that is not Windows Credential Manager."""
+
+    monkeypatch.setattr(fake_keyring, "get_keyring", lambda: PlainFileBackend())
+    with pytest.raises(KeyringBackendError):
+        auth.credentials_for("user@example.com", client_config=FAKE_CONFIG)
+
+
+def test_keyring_guard_accepts_chain_containing_vault(fake_keyring):
+    class ChainBackend:
+        def __init__(self, vault: object) -> None:
+            self.backends = [vault]
+
+    assert auth._keyring_is_secure(ChainBackend(fake_keyring.get_keyring())) is True
+
+
+def test_keyring_guard_rejects_unknown_backend():
+    assert auth._keyring_is_secure(object()) is False
+
+
+def test_secrets_become_registered_on_sign_in_and_load(fake_flow, fake_keyring, monkeypatch):
+    # Skip the browser dance; the sign-in result is what registration follows.
+    monkeypatch.setattr(
+        auth, "_run_local_sign_in", lambda flow, timeout: FakeCredentials("refresh-token-abc")
+    )
+    security_logging.clear_secrets()
+    try:
+        auth.add_account_interactive(client_config=FAKE_CONFIG)
+        assert "test-secret" in security_logging._registered  # client secret
+        assert "refresh-token-abc" in security_logging._registered  # new refresh token
+        auth.credentials_for("user@example.com", client_config=FAKE_CONFIG)
+    finally:
+        security_logging.clear_secrets()
 
 
 def test_has_token(fake_keyring):

@@ -11,11 +11,19 @@ class FakeKeyringError(Exception):
     """Mirrors keyring.errors.PasswordDeleteError for missing entries."""
 
 
+class FakeVaultBackend:
+    """Stand-in for keyring.backends.Windows.WinVaultKeyring in the backend guard."""
+
+
 class FakeKeyring:
     """Minimal in-memory stand-in for the keyring module API."""
 
     def __init__(self) -> None:
         self.entries: dict[tuple[str, str], str] = {}
+
+    def get_keyring(self) -> FakeVaultBackend:
+        """The active backend, as the auth.py security guard sees it."""
+        return FakeVaultBackend()
 
     def set_password(self, service: str, username: str, password: str) -> None:
         self.entries[(service, username)] = password
@@ -33,4 +41,5 @@ class FakeKeyring:
 def fake_keyring(monkeypatch: pytest.MonkeyPatch) -> FakeKeyring:
     fake = FakeKeyring()
     monkeypatch.setattr("gmail_notifier.auth.keyring", fake)
+    monkeypatch.setattr("gmail_notifier.auth._win_vault_classes", lambda: (FakeVaultBackend,))
     return fake

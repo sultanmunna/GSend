@@ -3,9 +3,12 @@
 Installed-app loopback flow with PKCE in the user's browser (DECISIONS D-02).
 This is the ONLY module that touches Windows Credential Manager via `keyring`
 (hard rule 4): only the refresh token is stored, under service
-`config.KEYRING_SERVICE` with the account email as username. Tokens and client
-secrets are never logged or put into error messages; account emails appear at
-DEBUG level only (docs/SECURITY.md section 5).
+`config.KEYRING_SERVICE` with the account email as username. A backend guard
+fails closed unless the active keyring is Windows Credential Manager (D-17),
+and every secret that enters memory is registered with `security_logging` so
+the redacting log formatter can scrub it. Tokens and client secrets are never
+logged or put into error messages; account emails appear at DEBUG level only
+(docs/SECURITY.md section 5).
 """
 
 from __future__ import annotations
@@ -27,8 +30,14 @@ import keyring
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow, _WSGIRequestHandler
 
-from gmail_notifier import config
-from gmail_notifier.errors import AuthCancelled, ConfigError, GmailError, ReauthRequired
+from gmail_notifier import config, security_logging
+from gmail_notifier.errors import (
+    AuthCancelled,
+    ConfigError,
+    GmailError,
+    KeyringBackendError,
+    ReauthRequired,
+)
 
 try:
     # The library's hardened loopback server: exclusive address binding on
@@ -76,15 +85,62 @@ def load_client_config() -> dict:
     )
 
 
+def _win_vault_classes() -> tuple[type, ...]:
+    """The keyring backend classes that count as Windows Credential Manager.
+
+    Resolved lazily so this module also imports on non-Windows development
+    machines; tests inject fakes here.
+    """
+    try:
+        from keyring.backends.Windows import WinVaultKeyring
+    except Exception:  # pragma: no cover - non-Windows
+        return ()
+    return (WinVaultKeyring,)
+
+
+def _keyring_is_secure(backend: object) -> bool:
+    """Whether the backend is Credential Manager or a chain containing it.
+
+    keyring silently picks the highest-priority backend it can find; if the
+    Windows one is unavailable, weaker fallbacks (worst case: a plain file)
+    would take the tokens. Fail closed instead (docs/SECURITY.md section 2, D-17).
+    """
+    vault_classes = _win_vault_classes()
+    if isinstance(backend, vault_classes):
+        return True
+    chain = getattr(backend, "backends", None) or []
+    return any(isinstance(inner, vault_classes) for inner in chain)
+
+
+def _ensure_secure_keyring() -> None:
+    """Raise `KeyringBackendError` unless the active keyring is Credential Manager."""
+    backend = keyring.get_keyring()
+    if not _keyring_is_secure(backend):
+        raise KeyringBackendError(
+            "Windows Credential Manager is unavailable; refusing to touch tokens "
+            f"with backend {type(backend).__name__}"
+        )
+
+
+def _register_client_secret(cfg: dict) -> None:
+    """Register the client secret for log redaction (best effort, no raise)."""
+    installed = cfg.get("installed")
+    if isinstance(installed, dict):
+        security_logging.register_secret(installed.get("client_secret"))
+
+
 def add_account_interactive(timeout_seconds: int = 180, client_config: dict | None = None) -> str:
     """Run the browser sign-in and store the refresh token; return the account email.
 
     Blocks until the user finishes in the browser, cancels, or the timeout hits
     (docs/ARCHITECTURE.md section 6). Runs only when called — never at import.
-    Raises `AuthCancelled` on cancel/timeout and `GmailError` when Google returns
-    no refresh token; in the latter case nothing is stored.
+    Raises `KeyringBackendError` when Credential Manager is unavailable (before
+    the browser opens), `AuthCancelled` on cancel/timeout and `GmailError` when
+    Google returns no refresh token; in the latter case nothing is stored.
     """
+    _ensure_secure_keyring()
     cfg = client_config if client_config is not None else load_client_config()
+    _register_client_secret(cfg)
     flow = InstalledAppFlow.from_client_config(
         cfg,
         config.SCOPES,
@@ -97,6 +153,7 @@ def add_account_interactive(timeout_seconds: int = 180, client_config: dict | No
     if not refresh_token:
         # prompt=consent + offline access should always yield one; refuse to store None.
         raise GmailError("Google returned no refresh token; nothing was stored")
+    security_logging.register_secret(refresh_token)
     keyring.set_password(config.KEYRING_SERVICE, email, refresh_token)
     logger.info("sign-in completed; token stored")
     logger.debug("sign-in completed for %s", email)
@@ -107,12 +164,16 @@ def credentials_for(email: str, client_config: dict | None = None) -> Credential
     """Rebuild polling credentials from the stored refresh token.
 
     The Gmail API service objects stay in the poller thread; this only builds the
-    credential. Raises `ReauthRequired` when no token is stored for the account.
+    credential. Raises `KeyringBackendError` when Credential Manager is unavailable
+    and `ReauthRequired` when no token is stored for the account.
     """
+    _ensure_secure_keyring()
     refresh_token = keyring.get_password(config.KEYRING_SERVICE, email)
     if not refresh_token:
         raise ReauthRequired("no stored token for this account; sign in again")
+    security_logging.register_secret(refresh_token)
     cfg = client_config if client_config is not None else load_client_config()
+    _register_client_secret(cfg)
     installed = cfg.get("installed")
     if (
         not isinstance(installed, dict)
@@ -142,6 +203,7 @@ def remove_account(email: str) -> None:
     except Exception as exc:
         logger.warning("token read failed (%s)", type(exc).__name__)
         token = None
+    security_logging.register_secret(token)
     try:
         keyring.delete_password(config.KEYRING_SERVICE, email)
     except Exception as exc:
@@ -248,8 +310,13 @@ def _revoke_token(token: str) -> None:
         method="POST",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
+    # B310 guard: the endpoint is the hardcoded Google revoke URL; verify the
+    # scheme so the urlopen below can never be tricked into file:/custom schemes.
+    if not request.full_url.startswith("https://"):
+        logger.warning("token revocation skipped (unexpected URL scheme)")
+        return
     try:
-        with urlopen(request, timeout=_REVOKE_TIMEOUT_SECONDS) as response:
+        with urlopen(request, timeout=_REVOKE_TIMEOUT_SECONDS) as response:  # nosec B310
             response.read()
     except Exception as exc:
         logger.warning("token revocation failed (%s); ignoring", type(exc).__name__)

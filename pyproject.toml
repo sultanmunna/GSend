@@ -24,6 +24,7 @@ dev = [
     "ruff>=0.4",
     "pyinstaller>=6.0",
     "pip-audit>=2.7",
+    "bandit>=1.7",
 ]
 
 [project.scripts]
