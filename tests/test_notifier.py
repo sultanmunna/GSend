@@ -58,7 +58,7 @@ def test_single_mail_maps_layout_and_launch():
     assert len(backend.calls) == 1
     title, message, launch, sound = backend.calls[0]
     assert title == "Subject m1"
-    assert "Jane · a@example.com" in message  # auto shows accounts with 2+
+    assert "Jane · a" in message  # auto shows accounts with 2+, as the local part
     assert "Preview m1" in message
     assert launch == links.mail_url("a@example.com", "t-m1")
     assert sound is True
@@ -68,7 +68,7 @@ def test_show_preview_and_sound_settings_honored():
     notifier, backend, _ = make_notifier(show_preview=False, notification_sound=False)
     notifier.notify_new_mails("a@example.com", [make_mail("m1")])
     title, message, _launch, sound = backend.calls[0]
-    assert message == "Jane · a@example.com"  # preview omitted, sender stays
+    assert message == "Jane · a"  # preview omitted, sender stays
     assert sound is False
 
 
@@ -79,7 +79,7 @@ def test_burst_produces_one_summary_toast_opening_inbox():
     assert len(backend.calls) == 1
     title, message, launch, _sound = backend.calls[0]
     assert title == "5 new mails"
-    assert message == "S1, S2, S3 and 2 more · a@example.com"
+    assert message == "S1, S2, S3 and 2 more · a"
     assert launch == links.inbox_url("a@example.com")
 
 
@@ -110,7 +110,7 @@ def test_reauth_toast_has_no_launch():
     notifier.notify_reauth_needed("a@example.com")
     title, message, launch, sound = backend.calls[0]
     assert "sign-in needed" in title.lower()
-    assert "a@example.com" in message
+    assert "Sign-in needed for a." in message  # short account name via account_display
     assert launch is None
     assert sound is False
 

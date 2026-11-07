@@ -47,6 +47,7 @@ For daily personal use, press **Publish app** on the Audience page. Sharing the 
 
 | Symptom | Cause and fix |
 |---|---|
+| **"Publish app" button is disabled** on the Audience page | The Branding page is incomplete. Open **Auth Platform → Branding** and fill every required field: app name, user support email, home page URL, privacy policy URL, developer contact. For a personal app without a website, your GitHub repo URL works for both links. Save, reload the Audience page (Ctrl+F5). If it is still disabled with every Branding checkmark green, it is a known console bug — retry in an incognito window or another browser. |
 | `Error 403: access_denied` ("not completed the verification") | The Gmail address is not a test user. Add it under Audience. |
 | `redirect_uri_mismatch` | The client type is not **Desktop app**. Create a new Desktop client. |
 | "Google hasn't verified this app" screen | Expected. Click **Advanced → Go to (app)**. |

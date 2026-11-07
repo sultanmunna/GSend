@@ -173,7 +173,7 @@ def test_tray_menu_with_mail_and_accounts():
 
     mail_item = items[0]
     assert "● Jane Doe: Hello" in mail_item.text  # auto shows accounts only with 2+
-    assert "a@x.com" in mail_item.text
+    assert "\t" in mail_item.text and mail_item.text.endswith("· a")  # age · account, short name
     assert mail_item.default is True  # left click opens the latest mail
 
     texts = [getattr(item, "text", None) for item in items]

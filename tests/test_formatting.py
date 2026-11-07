@@ -9,12 +9,16 @@ from gmail_notifier.formatting import (
     TooltipSnapshot,
     account_display,
     menu_line,
+    relative_age,
     summary_toast,
     toast_content,
     tooltip,
 )
 from gmail_notifier.models import Mail
 from gmail_notifier.settings import Settings
+
+# 5 minutes after make_mail's fixed received_at, so ages are deterministic
+NOW = datetime(2026, 1, 1, 12, 5, tzinfo=UTC)
 
 
 def make_mail(
@@ -60,44 +64,58 @@ def snapshot(
 def test_account_display_rules():
     one = Settings()
     assert account_display(one, 1, "a@x.com") is None  # auto: hidden with one account
-    assert account_display(one, 2, "a@x.com") == "a@x.com"
+    assert account_display(one, 2, "a@x.com") == "a"  # auto: local part with 2+ accounts
     assert account_display(one, 2, "a@x.com", "Work") == "Work"  # label wins
-    assert account_display(one, 1, "a@x.com") is None
     always = Settings(show_account="always")
-    assert account_display(always, 1, "a@x.com") == "a@x.com"
+    assert account_display(always, 1, "a@x.com") == "a"
     assert account_display(always, 1, "a@x.com", "Work") == "Work"
     never = Settings(show_account="never")
     assert account_display(never, 5, "a@x.com", "Work") is None
 
 
+# --- relative_age ----------------------------------------------------------------
+
+
+def test_relative_age_buckets():
+    assert relative_age(datetime(2026, 1, 1, 12, 4, 30, tzinfo=UTC), now=NOW) == "now"
+    assert relative_age(datetime(2026, 1, 1, 12, 0, tzinfo=UTC), now=NOW) == "5m"
+    assert relative_age(datetime(2026, 1, 1, 9, 0, tzinfo=UTC), now=NOW) == "3h"
+    assert relative_age(datetime(2025, 12, 30, 12, 0, tzinfo=UTC), now=NOW) == "2d"
+
+
+def test_relative_age_future_mail_counts_as_now():
+    assert relative_age(datetime(2026, 1, 1, 12, 6, tzinfo=UTC), now=NOW) == "now"
+
+
 # --- menu_line -------------------------------------------------------------------
 
 
-def test_menu_line_markers_and_account():
-    mail = make_mail(unread=True)
-    line = menu_line(mail, Settings(), "you@gmail.com")
-    assert line == "● Jane Doe: Hello · you@gmail.com"
-    read = menu_line(make_mail(unread=False), Settings(), None)
-    assert read == "  Jane Doe: Hello"  # two spaces keep alignment
+def test_menu_line_markers_and_right_column():
+    mail = make_mail(unread=True)  # received_at is 5 minutes before NOW
+    line = menu_line(mail, Settings(), "a", now=NOW)
+    assert line == "● Jane Doe: Hello\t5m · a"
+    read = menu_line(make_mail(unread=False), Settings(), None, now=NOW)
+    assert read == "○ Jane Doe: Hello\t5m"  # hollow bullet keeps the sender aligned
 
 
 def test_menu_line_no_subject():
-    line = menu_line(make_mail(subject=""), Settings(), None)
-    assert line == "● Jane Doe: (no subject)"
+    line = menu_line(make_mail(subject=""), Settings(), None, now=NOW)
+    assert line == "● Jane Doe: (no subject)\t5m"
 
 
 def test_menu_line_truncates_subject_before_sender():
     long_subject = "word " * 30
-    line = menu_line(make_mail(sender="Jane", subject=long_subject), Settings(), "a@x.com")
+    line = menu_line(make_mail(sender="Jane", subject=long_subject), Settings(), "a@x.com", now=NOW)
+    left, right = line.split("\t")
+    assert left.startswith("● Jane: ")  # sender intact
+    assert "…" in left
+    assert long_subject not in left
+    assert right.endswith("a@x.com")  # the account survives in the tab column
     assert len(line) <= formatting.MENU_LINE_LIMIT
-    assert line.startswith("● Jane: ")  # sender intact
-    assert "…" in line
-    assert long_subject not in line
-    assert line.endswith(" · a@x.com")  # the account survives
 
 
 def test_menu_line_truncates_long_sender_keeps_short_subject():
-    line = menu_line(make_mail(sender="X" * 120, subject="Hi"), Settings(), None)
+    line = menu_line(make_mail(sender="X" * 120, subject="Hi"), Settings(), None, now=NOW)
     assert len(line) <= formatting.MENU_LINE_LIMIT
     assert ": Hi" in line  # short subject intact
     assert "…" in line
@@ -107,7 +125,17 @@ def test_menu_line_length_never_exceeds_limit():
     for sender_len in range(0, 100, 7):
         for subject_len in range(0, 100, 7):
             mail = make_mail(sender="S" * sender_len, subject="b" * subject_len)
-            assert len(menu_line(mail, Settings(), "a@x.com")) <= formatting.MENU_LINE_LIMIT
+            line = menu_line(mail, Settings(), "a@x.com", now=NOW)
+            assert len(line) <= formatting.MENU_LINE_LIMIT
+            assert "\t" in line  # the right column survives every fit
+
+
+def test_menu_line_truncates_oversized_account_column():
+    line = menu_line(make_mail(), Settings(), "x" * 60, now=NOW)
+    left, right = line.split("\t")
+    assert len(right) <= formatting._AGE_COLUMN_LIMIT
+    assert len(line) <= formatting.MENU_LINE_LIMIT
+    assert ": Hello" in left  # the subject still fits
 
 
 # --- tooltip -----------------------------------------------------------------------

@@ -54,9 +54,9 @@ A tiny always-on tray app that makes Gmail on Windows behave like Gmail on the p
 ### 6.2 Menu
 
 ```
-● John Smith: Meeting moved to 3pm · you@gmail.com
-  Amazon: Your order has shipped · work@gmail.com
-  Bank: New statement · you@gmail.com
+● John Smith: Meeting moved to 3pm          2m · you
+○ Amazon: Your order has shipped           12m · work
+○ Bank: New statement                          1h
 ──────────────────────────────
 Open Gmail                  (one account: opens inbox; several: submenu per account)
 Check now
@@ -72,7 +72,11 @@ Settings ▸  ✓ Show message preview
 Quit
 ```
 
-- "●" marks unread mails (as known to the app); read mails get two spaces for alignment.
+- "●" marks unread mails (as known to the app); "○" marks read mails. The two glyphs
+  have the same width in Segoe UI, so senders stay aligned (D-16).
+- Each line ends with a tab; Win32 renders the text after it right-aligned (the
+  accelerator column): the mail's age — `now`, `5m`, `3h`, `2d` — and, when shown,
+  the account (D-16).
 - Mail items open that mail in the browser and mark it locally as acknowledged.
 - Empty state: a disabled item "No recent mail".
 - No accounts: first item is "Add account…" and the tooltip says to add one.
@@ -109,8 +113,8 @@ Line 2+: {preview}                   (<= 180 chars; omitted if show_preview is o
 - **Sender:** display name if present, else the email address. Decode RFC 2047 encoded-words (non-ASCII names such as Bangla are common). Strip surrounding quotes.
 - **Subject:** decoded; empty becomes `(no subject)`; whitespace collapsed.
 - **Preview (snippet):** HTML-unescape (Gmail snippets contain entities like `&#39;`), remove invisible padding characters (U+200B, U+200C, U+200D, U+034F, U+00AD, U+FEFF), collapse whitespace, truncate at a word boundary.
-- **Truncation** adds `…` (counts as 1 character). Limits: menu line 80, tooltip 127 total, toast title 70, toast preview 180.
-- **Account display** (`show_account`): `auto` shows it only when 2 or more accounts exist; `always`; `never`. It uses the account `label` if set, else the email.
+- **Truncation** adds `…` (counts as 1 character). Limits: menu line 64, tooltip 127 total, toast title 70, toast preview 180.
+- **Account display** (`show_account`): `auto` shows it only when 2 or more accounts exist; `always`; `never`. It uses the account `label` if set, else the local part of the email (before the `@`) (D-16).
 
 ## 7. Settings
 

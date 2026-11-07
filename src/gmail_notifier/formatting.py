@@ -1,21 +1,25 @@
 """Pure builders for menu lines, tooltip text and toast content from Mail/Settings.
 
 Implements the exact formats and limits of docs/PRODUCT.md sections 6.2-6.5:
-menu line 80, tooltip 127 total (including the newline), toast title 70 and
+menu line 64, tooltip 127 total (including the newline), toast title 70 and
 preview 180. The ellipsis counts as one character; the subject truncates
-before the sender; the account appears per the show_account rule. No I/O.
+before the sender; the account appears per the show_account rule. Menu lines
+end in a tab plus a right-aligned column ("age · account") — text after "\\t"
+renders right-aligned in a Win32 menu (D-16). No I/O.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from gmail_notifier import text_utils
 from gmail_notifier.models import Mail
 from gmail_notifier.settings import Settings
 
-MENU_LINE_LIMIT = 80
+MENU_LINE_LIMIT = 64  # 80 made the Win32 menu extremely wide (D-16)
+_AGE_COLUMN_LIMIT = 24  # cap for the right-aligned tab column
 TOOLTIP_LIMIT = 127  # Windows tray tooltip limit, including the newline
 TOAST_TITLE_LIMIT = 70
 TOAST_PREVIEW_LIMIT = 180
@@ -50,23 +54,53 @@ def account_display(
     """The account display string per the show_account rule, or None when hidden.
 
     auto shows the account only with two or more accounts; a hand-edited label
-    wins over the email address.
+    wins; without one, the local part of the address keeps lines short
+    ('justforkickak' instead of 'justforkickak@gmail.com').
     """
     mode = settings.show_account
     if mode == "never":
         return None
     if mode == "auto" and account_count < 2:
         return None
-    return label or email
+    local = email.partition("@")[0]
+    return label or local or email
 
 
-def menu_line(mail: Mail, settings: Settings, show_account: str | None) -> str:
-    """One tray menu line: marker + 'sender: subject' + optional account, <= 80."""
-    marker = "● " if mail.unread else "  "
-    suffix = f" · {show_account}" if show_account else ""
-    budget = MENU_LINE_LIMIT - len(marker) - len(suffix)
-    base = _fitted_sender_subject(mail.sender_name, _subject(mail), budget)
-    return text_utils.truncate(f"{marker}{base}{suffix}", MENU_LINE_LIMIT)
+def relative_age(received_at: datetime, *, now: datetime | None = None) -> str:
+    """Compact Gmail-style age of a mail: 'now', '5m', '3h', '2d'.
+
+    `received_at` is timezone-aware UTC (Mail.received_at); a mail dated in
+    the future (clock skew) counts as 'now'.
+    """
+    now = now or datetime.now(UTC)
+    seconds = max((now - received_at).total_seconds(), 0.0)
+    minutes = int(seconds // 60)
+    if seconds < 60:
+        return "now"
+    if minutes < 60:
+        return f"{minutes}m"
+    if minutes < 24 * 60:
+        return f"{minutes // 60}h"
+    return f"{minutes // (24 * 60)}d"
+
+
+def menu_line(
+    mail: Mail, settings: Settings, show_account: str | None, *, now: datetime | None = None
+) -> str:
+    """One tray menu line, <= MENU_LINE_LIMIT characters including the tab column.
+
+    Layout: '● /○ sender: subject\\t{age} · {account}' — the filled marker means
+    unread, the hollow one read (same width in Segoe UI, so senders align), and
+    the age plus optional account sit in the right-aligned Win32 tab column
+    (D-16). The subject truncates before the sender, as before.
+    """
+    marker = "● " if mail.unread else "○ "
+    age = relative_age(mail.received_at, now=now)
+    right = f"{age} · {show_account}" if show_account else age
+    right = text_utils.truncate(right, _AGE_COLUMN_LIMIT)
+    left_budget = MENU_LINE_LIMIT - len(marker) - 1 - len(right)  # 1 for the tab
+    base = _fitted_sender_subject(mail.sender_name, _subject(mail), left_budget)
+    return f"{marker}{base}\t{right}"
 
 
 def tooltip(snapshot: TooltipSnapshot, settings: Settings) -> str:
