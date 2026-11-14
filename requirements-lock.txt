@@ -24,7 +24,7 @@ jaraco.context==6.1.2
 jaraco.functools==4.6.0
 keyring==25.7.0
 license-expression==30.4.4
-markdown-it-py==4.2.0
+markdown-it-py==4.3.0
 mdurl==0.1.2
 more-itertools==11.2.1
 msgpack==1.2.4
