@@ -2,7 +2,7 @@
 # Regenerate with:  pip freeze | grep -iE "^(pystray|pillow|google-|httplib2|keyring|winotify|pyinstaller|pyinstaller-hooks-contrib|pywin32-ctypes|altgraph|packaging|setuptools|wheel)="
 # Exact pinning policy: docs/ROADMAP.md M8 (release checklist).
 altgraph==0.17.5
-google-api-python-client==2.201.0
+google-api-python-client==2.202.0
 google-auth==2.62.1
 google-auth-httplib2==0.4.4
 google-auth-oauthlib==1.5.0
